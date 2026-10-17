@@ -529,10 +529,20 @@ FIELD_EN = {
 }
 
 
+def _oslo_day(stamp: str) -> str:
+    """Calendar day in Norway for a feed timestamp (the feed is in UTC)."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    try:
+        return datetime.fromisoformat(stamp.replace("Z", "+00:00")).astimezone(ZoneInfo("Europe/Oslo")).date().isoformat()
+    except ValueError:
+        return stamp[:10]
+
+
 def feed_events(p: Profile, items: list[dict]) -> None:
     m = "brreg_update_feed_v1"
     items = [i for i in items if (i["update"].get("endringer") or i["update"].get("endringstype") not in ("Ukjent", None))]
-    items = sorted(items, key=lambda i: i["update"].get("dato") or "", reverse=True)[:12]
+    items = sorted(items, key=lambda i: i["update"].get("dato") or "", reverse=True)[:24]
     for item in items:
         upd, snap = item["update"], item["snap"]
         uid = upd.get("oppdateringsid")
@@ -550,15 +560,28 @@ def feed_events(p: Profile, items: list[dict]) -> None:
                 details.append({"field": label, "path": path, "new_value": ", ".join(v)})
             elif c.get("op") in ("replace", "add") and label and isinstance(v, (str, int, float, bool)):
                 details.append({"field": label, "path": path, "new_value": v})
+            elif c.get("op") == "remove" and path == "/antallAnsatte":
+                details.append({"field": "employees", "path": path, "new_value": None, "removed": True})
             elif c.get("op") in ("replace", "add") and path in ("/forretningsadresse", "/postadresse") and isinstance(v, dict):
                 details.append({"field": LEAF_EN[path + "/adresse"], "path": path, "new_value": ", ".join(v.get("adresse") or [])})
         value = {"date": upd.get("dato"), "type": upd.get("endringstype"), "changed_fields": paths[:20],
                  "changes": details[:8]}
         ev = p.add_evidence(snap, source_class=CLASS, span=span, method=m, licence=LICENCE)
-        p.add_claim("registry_update", "activity", value, [ev], as_of=(upd.get("dato") or "")[:10],
+        p.add_claim("registry_update", "activity", value, [ev], as_of=_oslo_day(upd.get("dato") or ""),
                     label="Registry update", match={"method": "orgnr_in_feed_record", "detail": "oppdateringer/enheter"})
-        day = (upd.get("dato") or "")[:10]
+        day = _oslo_day(upd.get("dato") or "")
         for d in details[:3]:
+            raw = re.search(r'\{"op":"(?:replace|add|remove)","path":"' + re.escape(d["path"]) + r'"(?:,"value":(?:"(?:[^"\\]|\\.)*"|[^,}\]]*|\[[^\]]*\]))?\}',
+                            snap.text[start:end] if end else snap.text[start:])
+            d_ev = p.add_evidence(snap, source_class=CLASS, span=raw.group(0), method=m, licence=LICENCE) if raw else None
+            if d.get("removed"):
+                p.add_claim("dated_activity", "activity", f"Employee count removed from the register ({day})", [d_ev or ev],
+                            as_of=day, label="Dated register event",
+                            extra={"title": "Employee count removed from the register", "date": day, "source": "Enhetsregisteret update feed"},
+                            match={"method": "orgnr_in_feed_record", "detail": "oppdateringer/enheter"})
+                continue
+            if d["field"] == "name":
+                continue  # former names come from historiskeNavn with the old name stated
             nv = d["new_value"]
             if d["field"] in ("employees",):
                 title = f"Employee count updated to {nv}"
@@ -568,6 +591,6 @@ def feed_events(p: Profile, items: list[dict]) -> None:
                 continue
             else:
                 title = f"{d['field'].capitalize()} changed"
-            p.add_claim("dated_activity", "activity", f"{title} ({day})", [ev], as_of=day, label="Dated register event",
+            p.add_claim("dated_activity", "activity", f"{title} ({day})", [d_ev or ev], as_of=day, label="Dated register event",
                         extra={"title": title, "date": day, "source": "Enhetsregisteret update feed"},
                         match={"method": "orgnr_in_feed_record", "detail": "oppdateringer/enheter"})

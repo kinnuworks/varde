@@ -53,6 +53,8 @@ An envelope holds `legal_name`, seven `sections` (identity and public brand, lat
 
 Availability states: `available`, `not_available` (checked, nothing there), `blocked` (robots.txt or the source refused), `not_applicable`, `ambiguous` (found something but could not prove it belongs to this company), `failed` (source error, timeout or budget). Every `available` claim has at least one evidence record whose `claim_span` appears verbatim in the saved snapshot.
 
+Dated register events (founding, registration, articles, former names, filings, employee and address changes) are published as `dated_activity` claims in the form `title (YYYY-MM-DD)`, separate from `dated_news`, which only holds items the company published itself.
+
 Value shapes in the external families: `official_website` is the registered domain (full address in `url`), `social_profile` is `platform.com/handle` in lower case without scheme (original link in `url`), `hiring_signal` is a careers page, job board or job posting URL, and `dated_news` is `title (datetime)` with the source's own date.
 
 ## Sources
@@ -61,7 +63,7 @@ Value shapes in the external families: `official_website` is the registered doma
 |---|---|---|---|
 | Enhetsregisteret API | Name, legal form, industry codes, addresses, registered employees, founding and registration dates, share capital, purpose and activity, website, phone and email in the register, VAT and register memberships, status flags, former names, group membership | Organisation number in the request URL | NLOD 2.0 |
 | Roles, sub-units, group structure, roles held in other entities | General manager, board, auditor, accountant; registered workplaces with addresses; parents and subsidiaries with ownership basis; partner shares in other entities | Organisation number in the request URL | NLOD 2.0 |
-| Update feed (`/oppdateringer/enheter`) | Dated registry changes over the last 12 months with the fields that changed | Organisation number filter on the feed | NLOD 2.0 |
+| Update feed (`/oppdateringer/enheter`) | Dated registry changes over the last 12 months with the fields that changed, each also published as a `dated_activity` event (for example "Employee count updated to 351 (2026-10-14)") quoting the exact change record; dates are given as the calendar day in Norway | Organisation number filter on the feed | NLOD 2.0 |
 | Regnskapsregisteret API | Filed accounts for up to three years: operating income, sales, operating result, salary costs, result before tax, annual result, assets, cash, equity, debt, audit flags | Organisation number in the request URL | NLOD 2.0 |
 | NAV job feed | Active job ads: title, place, published and expiry dates | Employer organisation number in the ad (workplace numbers mapped to the parent) | NAV public feed terms |
 | GLEIF | LEI, status, renewal dates | `registeredAs` equals the organisation number | CC0 |

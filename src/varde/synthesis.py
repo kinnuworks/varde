@@ -235,12 +235,15 @@ def template(p: Profile) -> dict:
     emp_points = []
     for u in updates:
         for ch in u["value"].get("changes") or []:
-            if ch["field"] == "employees" and isinstance(ch["new_value"], (int, float)):
-                emp_points.append((u["as_of"], ch["new_value"], u))
+            if ch["field"] == "employees":
+                emp_points.append((u["value"].get("date") or u["as_of"], ch["new_value"], u))
     emp_points.sort(key=lambda x: x[0])
-    if len(emp_points) >= 2 and emp_points[0][1] != emp_points[-1][1]:
+    current = _first(p, "registered_employees")
+    emp_ok = bool(emp_points) and emp_points[-1][1] is not None and current is not None and current["value"] == emp_points[-1][1]
+    emp_points = [x for x in emp_points if x[1] is not None]
+    if emp_ok and len(emp_points) >= 2 and emp_points[0][1] != emp_points[-1][1]:
         first, last = emp_points[0], emp_points[-1]
-        add(f"The registered employee count went from {first[1]} on {first[0]} to {last[1]} on {last[0]}.", [first[2], last[2]])
+        add(f"The registered employee count went from {first[1]} on {first[2]['as_of']} to {last[1]} on {last[2]['as_of']}.", [first[2], last[2]])
     if updates and not changes:
         bits, cites = [], []
         seen_fields: set[str] = {"employees"} if len(emp_points) >= 2 else set()
