@@ -66,8 +66,8 @@ Value shapes in the external families: `official_website` is the registered doma
 | NAV job feed | Active job ads: title, place, published and expiry dates | Employer organisation number in the ad (workplace numbers mapped to the parent) | NAV public feed terms |
 | GLEIF | LEI, status, renewal dates | `registeredAs` equals the organisation number | CC0 |
 | Wikidata | Item, ISIN; website and social accounts used only when the website matches the one Varde verified | Property P2333 equals the organisation number | CC0 |
-| TED | EU procurement notices won or published as buyer | Winner or buyer identifier equals the organisation number | Free reuse |
-| Doffin (when `DOFFIN_API_KEY` is set) | Norwegian procurement notices | Buyer or winner `organizationId` equals the organisation number | Doffin API terms |
+| TED | EU procurement notices won (single-winner notices only, since the identifier list can include every tenderer) or published as buyer (five buyers or fewer) | Winner or buyer identifier equals the organisation number | Free reuse |
+| Doffin (when `DOFFIN_API_KEY` is set) | Norwegian procurement notices published by the company as buyer (joint qualification schemes with many buyers are skipped) | Buyer `organizationId` equals the organisation number | Doffin public API terms |
 | The company's own website | Official website, description, social profiles it links to, careers pages and job boards it links to, job postings in its structured data, dated news from its feeds and news pages | Proof on the site itself (below) | Company-owned pages, robots.txt obeyed |
 
 Not used: aggregators whose terms forbid automated copying (Proff, Forvalt, 1881, Gule Sider, Purehelp), search-engine result pages, Brønnøysund announcement pages (robots.txt disallows them), Norid holder data (not public), and any scraping of LinkedIn, Meta, Glassdoor or Indeed. Social profiles come only from links on a verified company site or from a Wikidata item whose website matches it.
@@ -81,7 +81,7 @@ Candidates come from the register's website field, the register's email domain, 
 3. the legal name on the website the register declares, for distinctive names;
 4. the legal name with the full registered street address and postcode.
 
-A page that names a different organisation number without ours is rejected. Parked, for-sale, placeholder and empty pages never count. If the site is not exclusive to the company (another organisation number appears on it), only the website itself is published and the facts derived from it are withheld as `ambiguous`.
+A page that names a different organisation number without ours is rejected, and so is any page listing three or more other organisation numbers (directories, supplier and client lists), even when ours is among them. Parked, for-sale, placeholder and empty pages never count. If the site is not exclusive to the company (another organisation number appears on it), only the website itself is published and the facts derived from it are withheld as `ambiguous`.
 
 ## Refresh
 
@@ -91,13 +91,15 @@ Pass `--previous` or `--state-dir`. Claims have stable keys (field plus value), 
 
 Each profile has a short summary in which every sentence lists the claim ids it rests on. A validator drops any sentence containing a number or date that its cited claims do not contain. Financial figures are copied as filed, with currency, period and account type; Varde never computes, converts or estimates a figure. The `unknowns` list states what was checked and not found, and why.
 
+A model can write the summary instead of the template when `VARDE_LLM_PROVIDER` (`anthropic` or `openai`), `VARDE_MODEL` and the provider's API key are set. The model sees only this company's published claims, never raw pages, and never decides identity. Its sentences must cite claim ids, keep figures exactly as filed and pass the same validator; if fewer than three sentences pass, the template is used. Without these variables the run makes no model calls.
+
 ## Budget and cost
 
 All requests go through one client with a batch request cap, a per-company cap, a wall-clock budget, per-host concurrency limits, robots.txt checks on every redirect hop and refusal of private or loopback addresses. Batch sources (GLEIF, Wikidata, TED, the update feed) use one request per chunk of companies. A 100-company random sample takes about 20 seconds and 600 requests.
 
 | Item | Cost |
 |---|---|
-| Language model | none |
+| Language model | none by default; optional summary writer, about one short call per company |
 | APIs | open public APIs, no keys required |
 | Expected cost per official run | $0 |
 
@@ -105,7 +107,10 @@ All requests go through one client with a batch request cap, a per-company cap, 
 
 | File | Contents | Rebuild |
 |---|---|---|
-| `src/varde/data/nav_index.json.gz` | Active NAV job ads by employer organisation number; each matched ad is re-fetched live during the run and only active ads are published | `scripts/build_nav_index.py` |
+| `src/varde/data/nav_index.json.gz` | Active NAV job ads by employer organisation number, with the feed cursor. At run time Varde reads the feed from that cursor to its live end, drops ads that closed, adds new ads for batch companies, and re-fetches every matched ad; only active ads are published | `scripts/build_nav_index.py` |
+| `src/varde/data/website_seeds.json.gz` | Candidate website domains by organisation number, with a source tag per domain. Only organisation number, domain and tag are stored | `scripts/crawl_candidates.py`, `scripts/search_candidates.py`, then `scripts/build_website_seeds.py` |
+
+How the website seeds are built. A polite crawl (robots.txt obeyed, front page plus at most one contact or legal page, one request at a time per host, user agent `VardeCacheBuilder/1.0`) covered the `.no` hosts in three Common Crawl indexes (CC-MAIN-2026-30, -34, -39, used under the Common Crawl terms of use), the websites and email domains the register lists for universe companies, and domains derived from distinctive legal names. From each page it kept only identifiers: labelled organisation numbers, phone numbers and email addresses. A domain becomes a candidate when it prints the company's organisation number, or shows a phone or email the register lists for exactly that one entity, or is the email domain the register lists for the company. Pages printing more than four organisation numbers are dropped. For companies with ten or more employees and no website in the register, a search API was queried once with the legal name and town; result domains carrying a distinctive part of the name were kept as candidates, without titles or snippets. Seeds are candidates only: the run fetches each one live and publishes it only with proof on the site itself.
 
 ## Tests
 
