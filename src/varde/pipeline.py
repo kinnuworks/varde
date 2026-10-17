@@ -19,7 +19,7 @@ from .profile import SECTIONS, Profile
 from .refresh import diff
 from .sources import brreg, registers
 from .synthesis import template
-from .util import read_jsonl, utc_now, valid_orgnr, write_jsonl
+from .util import core_name, read_jsonl, utc_now, valid_orgnr, write_jsonl
 from .web import site
 
 PER_COMPANY_TIMEOUT = 150.0
@@ -106,9 +106,16 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
     valid = [o for o in orgs if valid_orgnr(o)]
     since = (datetime.now(timezone.utc) - timedelta(days=365)).strftime("%Y-%m-%dT00:00:00.000Z")
     nav = registers.NavIndex()
-    gleif, wikidata, ted, (_, updates) = await asyncio.gather(
+    gleif, wikidata, ted, (_, updates), bulk_names = await asyncio.gather(
         registers.gleif_batch(fetcher, valid), registers.wikidata_batch(fetcher, valid),
-        registers.ted_batch(fetcher, valid), brreg.update_feed(fetcher, valid, since))
+        registers.ted_batch(fetcher, valid), brreg.update_feed(fetcher, valid, since),
+        brreg.batch_names(fetcher, valid))
+    names: dict[str, list[str]] = {}
+    for o in valid:
+        row = bulk_names.get(o)
+        if row:
+            names.setdefault(core_name(row), []).append(o)
+    await nav.refresh(fetcher, names)
     shared = {"gleif": gleif, "wikidata": wikidata, "ted": ted, "updates": updates, "nav": nav, "seeds": _load_seeds()}
     sem = asyncio.Semaphore(concurrency)
     profiles: dict[str, Profile] = {}

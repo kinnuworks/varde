@@ -12,6 +12,7 @@ claim can point at the exact bytes it was read from.
 from __future__ import annotations
 
 import asyncio
+import random
 import ipaddress
 import json
 import socket
@@ -133,7 +134,7 @@ class Fetcher:
         self._robots: dict[str, RobotFileParser | None] = {}
         self._robots_locks: dict[str, asyncio.Lock] = {}
         self._dns: dict[str, bool] = {}
-        self.api_per_host = {"data.brreg.no": 12, "pam-stilling-feed.nav.no": 6}
+        self.api_per_host = {"data.brreg.no": 10, "pam-stilling-feed.nav.no": 6, "www.wikidata.org": 2}
 
     async def close(self) -> None:
         await self.client.aclose()
@@ -225,7 +226,8 @@ class Fetcher:
         hdrs = dict(headers or {})
         if accept_json:
             hdrs.setdefault("Accept", "application/json")
-        for attempt in range(2):
+        attempts = 4 if host in API_HOSTS else 2
+        for attempt in range(attempts):
             try:
                 async with self._sem(host):
                     async with self.client.stream(method, url, headers=hdrs,
@@ -238,17 +240,19 @@ class Fetcher:
                                 break
                             chunks.append(chunk)
                         r._content = b"".join(chunks)  # noqa: SLF001 - keep the capped body
-                if r.status_code in (429, 502, 503, 504) and attempt == 0:
-                    await asyncio.sleep(1.5)
+                if r.status_code in (429, 502, 503, 504) and attempt < attempts - 1:
+                    retry_after = r.headers.get("retry-after", "")
+                    wait = float(retry_after) if retry_after.isdigit() else 1.5 * (2 ** attempt)
+                    await asyncio.sleep(min(wait, 20) + random.random())
                     continue
                 return r
             except httpx.TimeoutException:
-                if attempt == 0:
+                if attempt < attempts - 1:
                     continue
                 return FetchError(url, "timeout")
             except httpx.HTTPError:
-                if attempt == 0:
-                    await asyncio.sleep(0.5)
+                if attempt < attempts - 1:
+                    await asyncio.sleep(0.5 + random.random())
                     continue
                 return FetchError(url, "network")
         return FetchError(url, "network")

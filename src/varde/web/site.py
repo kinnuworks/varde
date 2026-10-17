@@ -285,10 +285,23 @@ def candidates(p: Profile, seeds: dict[str, list[str]] | None, nav_homepages: li
         add(url, "nav_homepage")
     for dom in (seeds or {}).get(p.organisation_number, []):
         add(dom, "seed")
-    slug = ascii_slug(core_name(p.legal_name or ""))
-    if len(slug) >= 5 and distinctive(p.legal_name or "") and (rec.get("organisasjonsform") or {}).get("kode") not in ("ENK", "BRL", "ESEK"):
-        add(f"{slug}.no", "name_derived")
-    return out[:5]
+    form_code = (rec.get("organisasjonsform") or {}).get("kode")
+    if distinctive(p.legal_name or "") and form_code not in ("ENK", "BRL", "ESEK"):
+        core = core_name(p.legal_name or "")
+        words = [ascii_slug(w) for w in core.split() if ascii_slug(w)]
+        slug = "".join(words)
+        trimmed = [w for w in words if w not in ("holding", "invest", "gruppen", "group", "norge", "norway")]
+        variants = [slug]
+        if 1 < len(words) <= 4:
+            variants.append("-".join(words))
+        if trimmed and trimmed != words and len("".join(trimmed)) >= 5:
+            variants.append("".join(trimmed))
+        for v in variants:
+            if len(v) >= 5:
+                add(f"{v}.no", "name_derived")
+        if len(slug) >= 6:
+            add(f"{slug}.com", "name_derived")
+    return out[:8]
 
 
 # ---------------------------------------------------------------- mining
@@ -653,6 +666,8 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
     rejected: list[str] = []
     for cand in cands:
         snap = await f.get(cand.url, company=org)
+        if isinstance(snap, FetchError) and snap.reason in ("network", "timeout") and cand.url.startswith("https://"):
+            snap = await f.get("http://" + cand.url[len("https://"):], company=org)
         if isinstance(snap, FetchError):
             rejected.append(f"{cand.url}: {snap.reason}")
             if snap.reason == "blocked_robots":
@@ -668,15 +683,25 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
         proof, reason = prove(p, pv, cand)
         contact_pv = None
         if not proof and reason and "parked" not in reason and "other organisation" not in reason:
-            link = next((a for a, _r, t in pv.links
-                         if registered_domain(a) == registered_domain(snap.final_url)
-                         and re.search(r"(kontakt|contact|om-oss|about|personvern|privacy)", a, re.I)), None)
-            if link:
+            links = []
+            for a, _r, t in pv.links:
+                if registered_domain(a) != registered_domain(snap.final_url) or a in links:
+                    continue
+                if re.search(r"(kontakt|contact|om-oss|om_oss|about|personvern|privacy|salgsbetingelser|vilkar|vilkår|"
+                             r"policies/|terms|impressum|kjopsvilkar|kjøpsvilkår)", a, re.I):
+                    links.append(a)
+            links.sort(key=lambda a: 0 if re.search(r"kontakt|contact", a, re.I) else 1 if re.search(r"om-oss|about", a, re.I) else 2)
+            for link in links[:3]:
                 csnap = await f.get(link, company=org)
-                if not isinstance(csnap, FetchError):
-                    contact_pv = view(csnap)
-                    proof, reason2 = prove(p, contact_pv, cand)
-                    reason = reason2 or reason
+                if isinstance(csnap, FetchError):
+                    continue
+                contact_pv = view(csnap)
+                proof, reason2 = prove(p, contact_pv, cand)
+                if proof:
+                    break
+                if reason2 and "other organisation" in reason2:
+                    reason = reason2
+                    break
         if not proof or not proof.span:
             rejected.append(f"{cand.url}: {reason or 'proof has no quotable span'}")
             continue
@@ -699,6 +724,17 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
         else:
             p.mark_field("social_profile", "web_presence", "ambiguous", f"Site-derived facts withheld: {why}.")
         return
+    reg = (p.context.get("entity") or {}).get("hjemmeside")
+    esnap = p.context.get("entity_snap")
+    if reg and esnap is not None and any(r.startswith(normalise_url(reg) or "~") and "other organisation" in r for r in rejected):
+        from ..profile import json_span
+        e = p.add_evidence(esnap, source_class="official_registry", span=json_span(esnap.text, "hjemmeside", reg),
+                           method="brreg_entity_v1", licence="NLOD 2.0 (Brønnøysundregistrene)",
+                           note="The register declares this website; the site itself names another organisation (often a manager or parent).")
+        p.add_claim("related_website", "web_presence", registered_domain(normalise_url(reg) or reg),
+                    [e], label="Website declared in the register, run by another organisation",
+                    match={"method": "declared_in_register", "detail": "hjemmeside; site names another organisation number"},
+                    extra={"exclusive": False, "url": normalise_url(reg)})
     state = "ambiguous" if any("name visible" in r or "other organisation" in r for r in rejected) else "not_available"
     p.mark_field("official_website", "web_presence", state,
                  "No candidate could be proven to belong to this organisation number. Checked: " + "; ".join(rejected[:4]))

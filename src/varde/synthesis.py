@@ -90,10 +90,11 @@ def template(p: Profile) -> dict:
     activity = _first(p, "registered_activity") or _first(p, "statutory_purpose")
     desc = _first(p, "website_description")
     industry = next((c for c in p.published("industry") if c["value"].get("rank") == 1), None)
-    if desc:
-        add(f"Its website describes the business as follows: \"{desc['value'][:220].rstrip()}\"", [desc])
+    desc_text = _sentence_cut(desc["value"]) if desc else None
+    if desc and desc_text:
+        add(f"Its website describes the business as follows: \"{desc_text}\"" + ("" if desc_text[-1] in ".!?" else "."), [desc])
     elif activity:
-        add(f"Its registered activity: \"{activity['value'][:220].rstrip()}\"", [activity])
+        add(f"Its registered activity: \"{_sentence_cut(activity['value']) or activity['value'][:200]}\"", [activity])
     if industry:
         add(f"Its main industry code is {industry['value']['code']} ({industry['value']['description'].lower()}).", [industry])
 
@@ -123,7 +124,9 @@ def template(p: Profile) -> dict:
         if len(revs) > 1:
             prev = revs[-2]
             pyear = prev["reporting_period"].split("/")[-1][:4]
-            text += f", against {_fmt_amount(prev['value']['amount'])} {cur} in operating income for {pyear}"
+            a, b = float(prev["value"]["amount"]), float(latest["value"]["amount"])
+            word = "up from" if b > a else "down from" if b < a else "unchanged from"
+            text += f"; operating income was {word} {_fmt_amount(prev['value']['amount'])} {cur} in {pyear}"
             cites.append(prev)
         add(text + ".", cites)
     else:
@@ -136,7 +139,12 @@ def template(p: Profile) -> dict:
     lead = sorted(roles, key=lambda c: order.get(c["value"].get("role_code"), 99))
     names = [c for c in lead if c["value"].get("role_code") in ("DAGL", "LEDE", "INNH")][:2]
     if names:
-        parts = [f"{c['value']['name']} ({c['value']['role'].lower()})" for c in names]
+        merged: dict[str, list[str]] = {}
+        for c in lead:
+            if c["value"].get("role_code") in ("DAGL", "LEDE", "INNH"):
+                merged.setdefault(c["value"]["name"], []).append(c["value"]["role"].lower())
+        names = [c for c in lead if c["value"].get("role_code") in ("DAGL", "LEDE", "INNH")]
+        parts = [f"{n} ({' and '.join(r)})" for n, r in list(merged.items())[:2]]
         board = [c for c in roles if c["value"].get("role_code") in ("MEDL", "NEST")]
         text = "Registered leadership: " + " and ".join(parts)
         if board:
@@ -164,9 +172,16 @@ def template(p: Profile) -> dict:
     if news:
         add(f"The latest news on its own website is \"{news[0].get('title') or news[0]['value']}\" from {news[0].get('as_of')}.", [news[0]])
     records = p.published("public_record")
-    if records:
-        kinds = sorted({c["value"].get("type") for c in records if c["value"].get("type")})
-        add(f"Public records found: {', '.join(k.lower() for k in kinds[:3])}.", records[:6])
+    won = [c for c in records if c["value"].get("type") == "Public contract awarded"]
+    bought = [c for c in records if "as buyer" in (c["value"].get("type") or "")]
+    if won:
+        add(f"EU procurement notices list it as the winner of {len(won)} public contract{'s' if len(won) != 1 else ''}, "
+            f"most recently on {sorted(c['as_of'] for c in won)[-1]}.", won[:6])
+    if bought:
+        add(f"It has published {len(bought)} procurement notice{'s' if len(bought) != 1 else ''} as a buyer.", bought[:6])
+    lei = _first(p, "lei")
+    if lei:
+        add(f"It holds a Legal Entity Identifier ({lei['value']['lei']}).", [lei])
 
     changes = [c for c in p.changes if c.get("material")]
     if changes:
@@ -176,6 +191,7 @@ def template(p: Profile) -> dict:
     updates = sorted(p.published("registry_update"), key=lambda c: c["value"].get("date") or "", reverse=True)
     if updates and not changes:
         bits, cites = [], []
+        seen_fields: set[str] = set()
         for u in updates:
             for ch in u["value"].get("changes") or []:
                 if ch["field"] in ("employee count registration date", "employee count date (NAV Aa-register)"):
@@ -183,6 +199,9 @@ def template(p: Profile) -> dict:
                 if ch["field"] in ("employees", "website", "name", "latest filed accounts year", "email", "phone",
                                    "industry code", "share capital", "bankruptcy flag", "winding-up flag", "legal form") \
                         or "address" in ch["field"]:
+                    if ch["field"] in seen_fields:
+                        break
+                    seen_fields.add(ch["field"])
                     bits.append(f"{ch['field']} set to {ch['new_value']} on {u['as_of']}")
                     cites.append(u)
                     break
@@ -207,12 +226,33 @@ UNKNOWN_LABELS = {
 }
 
 
+def _plain(reason: str) -> str:
+    reason = re.sub(r"https?://", "", reason)
+    for raw, nice in (("dns_or_private_address", "the domain does not exist"), ("blocked_robots", "the site's robots.txt disallows access"),
+                      ("http_404", "page not found"), ("http_403", "the site refused access"), ("timeout", "the site did not respond in time"),
+                      ("network", "the site could not be reached"), ("budget", "skipped to stay within the run budget"),
+                      ("blocked_policy", "address not allowed")):
+        reason = reason.replace(raw, nice)
+    return reason
+
+
+def _sentence_cut(text: str, limit: int = 240) -> str | None:
+    text = re.sub(r"\s+", " ", text or "").strip()
+    if len(text) <= limit and (text.endswith((".", "!", "?")) or len(text.split()) >= 5):
+        return text
+    cut = text[:limit]
+    end = max(cut.rfind(". "), cut.rfind("! "), cut.rfind("? "))
+    if end >= 40:
+        return cut[:end + 1]
+    return None
+
+
 def unknown_list(p: Profile) -> list[str]:
     out = []
     for c in p.claims:
         if c["availability"] in ("not_available", "ambiguous", "failed", "blocked") and c.get("reason"):
             label = UNKNOWN_LABELS.get(c["field"], c["field"].replace("_", " ").capitalize())
-            out.append(f"{label}: {c['reason']}")
+            out.append(f"{label}: {_plain(c['reason'])}")
     if not p.published("official_website") and not any(c["field"] == "official_website" for c in p.claims):
         out.append("Official website: not checked.")
     if p.published("official_website") and not p.published("dated_news"):

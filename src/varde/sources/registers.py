@@ -26,13 +26,66 @@ class NavIndex:
         self.index: dict[str, list[dict]] = {}
         self.built_at: str | None = None
         self.token: str | None = None
+        self.cursor: str | None = None
+        self.closed: set[str] = set()
+        self.tail_pages = 0
         try:
             raw = resources.files("varde.data").joinpath("nav_index.json.gz").read_bytes()
             body = json.loads(gzip.decompress(raw))
             self.index = body.get("index", {})
             self.built_at = body.get("built_at")
+            self.cursor = body.get("cursor")
         except (FileNotFoundError, ModuleNotFoundError, OSError, ValueError):
             pass
+
+    async def refresh(self, f: Fetcher, names: dict[str, list[str]], max_pages: int = 40) -> None:
+        """Read the feed from the index cursor to its live end.
+
+        Ads that turned inactive are dropped. New active ads whose employer name
+        matches a batch company are fetched, and kept only when the ad's employer
+        organisation number is that company's.
+        """
+        if not self.cursor:
+            return
+        token = await self.ensure_token(f)
+        if not token:
+            return
+        from ..util import core_name
+        cursor = self.cursor
+        fresh: list[tuple[str, str]] = []
+        while cursor and self.tail_pages < max_pages:
+            snap = await f.get(f"{NAV}{cursor}", headers={"Authorization": f"Bearer {token}"}, accept_json=True)
+            if isinstance(snap, FetchError):
+                break
+            self.tail_pages += 1
+            body = snap.json()
+            items = body.get("items") or []
+            for item in items:
+                entry = item.get("_feed_entry") or {}
+                if entry.get("status") != "ACTIVE":
+                    self.closed.add(item.get("id"))
+                    continue
+                key = core_name(entry.get("businessName") or "")
+                if key in names:
+                    fresh.append((item.get("id"), key))
+            nxt = body.get("next_url")
+            if len(items) < 1000 or not nxt or nxt == cursor:
+                break
+            cursor = nxt
+        known = {ad["id"] for ads in self.index.values() for ad in ads}
+        for ad_id, key in fresh[:60]:
+            if ad_id in known:
+                continue
+            snap = await f.get(f"{NAV}/api/v1/feedentry/{ad_id}", headers={"Authorization": f"Bearer {token}"}, accept_json=True)
+            if isinstance(snap, FetchError):
+                continue
+            content = snap.json().get("ad_content") or {}
+            org = re.sub(r"\D", "", str((content.get("employer") or {}).get("orgnr") or ""))
+            if len(org) == 9:
+                self.index.setdefault(org, []).append({"id": ad_id, "title": content.get("title"),
+                                                       "homepage": (content.get("employer") or {}).get("homepage")})
+        for org, ads in list(self.index.items()):
+            self.index[org] = [ad for ad in ads if ad["id"] not in self.closed]
 
     async def ensure_token(self, f: Fetcher) -> str | None:
         if self.token:
@@ -51,7 +104,7 @@ async def nav_jobs(p: Profile, f: Fetcher, nav: NavIndex, subunit_orgs: set[str]
     for sub in subunit_orgs:
         candidates.extend(dict(ad, via_subunit=sub) for ad in nav.index.get(sub, []))
     if not nav.index:
-        p.mark_field("job_ad", "activity", "failed", "NAV job index is not available in this build.")
+        p.mark_field("job_ad", "activity", "failed", "NAV job ads could not be checked on this run.")
         return
     if not candidates:
         p.mark_field("job_ad", "activity", "not_available",

@@ -173,9 +173,20 @@ async def main() -> None:
     todo = [d for d in dict.fromkeys(domains) if d not in seen]
     print(f"{len(todo)} domains to crawl ({len(seen)} already done)", file=sys.stderr, flush=True)
     c = Crawler(out, args.concurrency)
-    for i in range(0, len(todo), 5000):
-        await asyncio.gather(*(c.crawl(d) for d in todo[i:i + 5000]))
-        c.fh.flush()
+    queue: asyncio.Queue[str] = asyncio.Queue()
+    for d in todo:
+        queue.put_nowait(d)
+
+    async def worker() -> None:
+        while not queue.empty():
+            d = queue.get_nowait()
+            try:
+                await asyncio.wait_for(c.crawl(d), timeout=60)
+            except asyncio.TimeoutError:
+                pass
+
+    await asyncio.gather(*(worker() for _ in range(args.concurrency)))
+    c.fh.flush()
     c.fh.close()
     await c.client.aclose()
 

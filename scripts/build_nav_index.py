@@ -135,6 +135,7 @@ def main() -> None:
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "active_ads": len(active_ids),
         "organisations": len(index),
+        "cursor": state["next"],
         "index": index,
     }
     with gzip.open(out, "wt", encoding="utf-8") as handle:

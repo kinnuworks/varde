@@ -425,6 +425,20 @@ async def held_roles(p: Profile, f: Fetcher) -> None:
                 added += 1
 
 
+async def batch_names(fetcher: Fetcher, orgs: list[str]) -> dict[str, str]:
+    """Legal names for a batch, 100 per request (used only to pre-select NAV ads)."""
+    out: dict[str, str] = {}
+    for i in range(0, len(orgs), 100):
+        chunk = orgs[i:i + 100]
+        snap = await fetcher.get(f"{API}/enheter", params={"organisasjonsnummer": ",".join(chunk), "size": 100},
+                                 accept_json=True)
+        if isinstance(snap, FetchError):
+            continue
+        for rec in (snap.json().get("_embedded") or {}).get("enheter") or []:
+            out[rec.get("organisasjonsnummer")] = rec.get("navn") or ""
+    return out
+
+
 async def update_feed(fetcher: Fetcher, orgs: list[str], since: str) -> tuple[Snapshot | None, dict[str, list[dict]]]:
     """Dated registry changes for a batch, with JSON-Patch diffs (one request per 100 numbers)."""
     out: dict[str, list[dict]] = {}
