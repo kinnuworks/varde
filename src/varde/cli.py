@@ -49,7 +49,7 @@ def main(argv: list[str] | None = None) -> None:
         p.add_argument("--max-requests", type=int, default=int(os.environ.get("VARDE_MAX_REQUESTS", "0")) or None)
         p.add_argument("--time-budget", type=float, default=float(os.environ.get("VARDE_TIME_BUDGET", "2400")))
         p.add_argument("--per-company-requests", type=int, default=int(os.environ.get("VARDE_PER_COMPANY", "40")))
-        p.add_argument("--concurrency", type=int, default=int(os.environ.get("VARDE_CONCURRENCY", "24")))
+        p.add_argument("--concurrency", type=int, default=int(os.environ.get("VARDE_CONCURRENCY", "48")))
         p.add_argument("--no-html", action="store_true")
         # Accepted for compatibility with the Signalpost starter harness; not needed here.
         for flag in ("--bulk", "--workers", "--checkpoint-every", "--modules"):

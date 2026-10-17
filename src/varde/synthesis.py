@@ -197,6 +197,12 @@ def template(p: Profile) -> dict:
     if lei:
         add(f"It holds a Legal Entity Identifier ({lei['value']['lei']}).", [lei])
 
+    check = _first(p, "refresh_check")
+    if check and check.get("value", {}).get("previous_check") is not None or (check and check["value"]["previous_check"]):
+        prev = (check["value"].get("previous_check") or "")[:10]
+        n = check["value"]["changes"]
+        if n == 0:
+            add(f"Nothing changed since the previous check on {prev}.", [check])
     changes = [c for c in p.changes if c.get("material")]
     if changes:
         add("Since the previous check: " + "; ".join(c["explanation"].rstrip(".") for c in changes[:3]) + ".",
@@ -267,8 +273,19 @@ def unknown_list(p: Profile) -> list[str]:
         if c["availability"] in ("not_available", "ambiguous", "failed", "blocked") and c.get("reason"):
             label = UNKNOWN_LABELS.get(c["field"], c["field"].replace("_", " ").capitalize())
             out.append(f"{label}: {_plain(c['reason'])}")
-    if not p.published("official_website") and not any(c["field"] == "official_website" for c in p.claims):
+    has_site = bool(p.published("official_website"))
+    if not has_site and not any(c["field"] == "official_website" for c in p.claims):
         out.append("Official website: not checked.")
-    if p.published("official_website") and not p.published("dated_news"):
-        out.append("Dated news: none found on the verified website.")
-    return out[:12]
+    if not has_site:
+        out.append("Social profiles, careers pages and website news: not checked, because no website could be proven to belong to this company.")
+    else:
+        if not p.published("social_profile"):
+            out.append("Social profiles: the verified website links to none.")
+        if not p.published("hiring_signal") and not p.published("job_ad"):
+            out.append("Hiring: no open NAV job ads and no careers page on the verified website.")
+        if not p.published("dated_news"):
+            out.append("Dated news: none found on the verified website.")
+    if not p.published("revenue") and not any(c["field"] == "annual_accounts" for c in p.claims):
+        out.append("Annual accounts: no structured figures returned by Regnskapsregisteret.")
+    seen: set[str] = set()
+    return [x for x in out if not (x in seen or seen.add(x))][:12]

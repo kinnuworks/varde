@@ -142,3 +142,9 @@ def diff(p: Profile, previous: dict | None) -> None:
                             "material_changes": sum(1 for c in changes if c["material"]), "carried_forward": carried}
     p.mark("refresh", "available" if changes or carried else "not_available",
            None if changes else "No changes since the previous run.")
+    entity_ev = next((e["id"] for e in p.evidence if e.get("extraction_method") == "brreg_entity_v1" and e.get("span_exact")), None)
+    if entity_ev:
+        p.add_claim("refresh_check", "refresh",
+                    {"previous_check": (previous.get("run") or {}).get("completed_at"),
+                     "changes": len(changes), "material_changes": sum(1 for c in changes if c["material"])},
+                    [entity_ev], label="Compared with the previous run", as_of=now[:10])
