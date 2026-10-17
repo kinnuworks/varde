@@ -41,6 +41,7 @@ PLATFORM_DOMAINS = {
     "wix.com", "wixsite.com", "squarespace.com", "wordpress.com", "blogspot.com", "google.com", "sites.google.com",
     "proff.no", "1881.no", "gulesider.no", "purehelp.no", "brreg.no", "finn.no", "mittanbud.no", "bedriftsdatabasen.no",
     "regnskapstall.no", "forvalt.no", "facebook.no", "jimdo.com", "webnode.com", "one.com", "domeneshop.no",
+    "hugedomains.com", "sedo.com", "dan.com", "afternic.com", "godaddy.com", "parkingcrew.net", "bodis.com",
 }
 PARKED = re.compile(
     r"(domain (name )?(is )?for sale|domenet (er )?til salgs|this domain (has been|was) registered|parkert domene|"
@@ -792,8 +793,6 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
             snap = await f.get("http://" + cand.url[len("https://"):], company=org)
         if isinstance(snap, FetchError):
             rejected.append(f"{cand.url}: {snap.reason}")
-            if snap.reason == "blocked_robots":
-                p.mark_field("official_website", "web_presence", "blocked", f"robots.txt disallows {cand.url}")
             continue
         if "html" not in snap.content_type and snap.content_type:
             rejected.append(f"{cand.url}: not an HTML page")
@@ -857,8 +856,9 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
             p.mark_field("social_profile", "web_presence", "ambiguous", f"Site-derived facts withheld: {why}.")
         return
     transient = ("network", "timeout", "budget")
-    if rejected and all(any(r.endswith(": " + t) for t in transient) for r in rejected):
+    if rejected and any(any(r.endswith(": " + t) for t in transient) for r in rejected) and not p.context.get("web_retried"):
         p.context["web_retry"] = True
+        p.context["web_retried"] = True
     reg = (p.context.get("entity") or {}).get("hjemmeside")
     esnap = p.context.get("entity_snap")
     if reg and esnap is not None and any(r.startswith(normalise_url(reg) or "~") and "other organisation" in r for r in rejected):
@@ -870,6 +870,11 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
                     [e], label="Website declared in the register, run by another organisation",
                     match={"method": "declared_in_register", "detail": "hjemmeside; site names another organisation number"},
                     extra={"exclusive": False, "url": normalise_url(reg)})
-    state = "ambiguous" if any("name visible" in r or "other organisation" in r for r in rejected) else "not_available"
+    if rejected and all(r.endswith(": blocked_robots") for r in rejected):
+        state = "blocked"
+    elif any("name visible" in r or "other organisation" in r for r in rejected):
+        state = "ambiguous"
+    else:
+        state = "not_available"
     p.mark_field("official_website", "web_presence", state,
                  "No candidate could be proven to belong to this organisation number. Checked: " + "; ".join(rejected[:4]))
