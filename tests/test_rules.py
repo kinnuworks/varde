@@ -135,3 +135,18 @@ def test_contact_page_with_other_orgnr_blocks_name_proof(monkeypatch):
     core = cn("BLINDHEIM MASKIN AS")
     other = cn("BLINDHEIM MASKIN & TRANSPORT AS")
     assert f" {core} " in f" {other} "
+
+
+def test_manager_site_with_registry_contacts_but_no_name_is_rejected():
+    p = entity_profile(org="988397105", name="SOLGLIMT BORETTSLAG", telefon="75 11 22 33",
+                       epostadresse="post@helgelandbbl.no", hjemmeside="www.helgelandbbl.no")
+    html = "<html><body><h1>Helgeland BBL</h1>" + "<p>Vi forvalter borettslag i regionen.</p>" * 10 + "<p>Telefon 75 11 22 33</p></body></html>"
+    proof, _ = prove(p, view(snap(html, "https://helgelandbbl.no/")), Candidate("https://helgelandbbl.no/", "registry_website"))
+    assert proof is None
+
+
+def test_unlabelled_foreign_orgnr_blocks_weak_proof():
+    p = entity_profile(name="DIPS AS", telefon="75592000")
+    html = "<html><body><h1>DIPS AS</h1>" + "<p>Tekst om firmaet her.</p>" * 10 + "<p>75 59 20 00</p><p>923 609 016</p></body></html>"
+    proof, _ = prove(p, view(snap(html)), Candidate("https://example.no/", "seed"))
+    assert proof is None

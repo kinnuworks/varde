@@ -246,27 +246,15 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
         return Proof("orgnr_on_page", f"organisation number {org} printed on {pv.snap.final_url}", span, 3), None
     if others_labelled:
         return None, f"page names other organisation number(s) {sorted(others_labelled)[:3]}"
+    others_any = {n for n in every if n not in group and n != org and re.search(_orgnr_raw_pattern(n), html)}
+    if others_any:
+        return None, f"page prints another organisation number {sorted(others_any)[:2]}"
     title_node = pv.tree.css_first("title")
     head_text = (title_node.text() if title_node else "") + " " + " ".join(
         (n.attributes.get("content") or "") for n in pv.tree.css('meta[property="og:site_name"], meta[property="og:title"]'))
     named = name_visible(text + " " + head_text, legal)
     reg_domain = registered_domain(rec.get("hjemmeside") or "") if rec.get("hjemmeside") else None
     cand_domain = registered_domain(pv.snap.final_url)
-    declared = {d for d in (reg_domain, registered_domain(rec["epostadresse"].split("@", 1)[1])
-                            if "@" in (rec.get("epostadresse") or "") else None) if d}
-    if not named and cand_domain in declared:
-        phone0 = phone_digits(rec.get("telefon") or rec.get("mobil"))
-        found0 = page_has_phone(html, phone0) if phone0 else None
-        if found0:
-            span0 = visible_span(html, r"(?<!\d)" + r"[\s.\u00a0-]?".join(phone0) + r"(?!\d)") or found0
-            return Proof("registry_declared_domain_and_phone",
-                         f"the register lists this domain for the company and its registry phone {phone0} is on the page", span0, 2), None
-        email0 = (rec.get("epostadresse") or "").lower()
-        if email0 and email0 in html.lower():
-            span0 = visible_span(html, re.escape(email0)) or email0
-            if span0 in html:
-                return Proof("registry_declared_domain_and_email",
-                             f"the register lists this domain for the company and its registry email {email0} is on the page", span0, 2), None
     if not named:
         return None, "legal name not visible on the page"
     name_span = visible_name_span(html, legal)
@@ -282,11 +270,16 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
         raw_email = html[idx:idx + len(email)]
         span = visible_span(html, re.escape(email)) or text_span(html, raw_email, context=30) or raw_email
         return Proof("registry_email_and_name", f"registry email {email} and legal name on page", span, 2), None
-    if cand.source == "registry_website" and reg_domain and cand_domain == reg_domain and len(core_name(legal)) >= 3 and name_span:
+    reg_path = urlsplit(normalise_url(rec.get("hjemmeside") or "") or "").path.strip("/") if rec.get("hjemmeside") else ""
+    if cand.source == "registry_website" and reg_domain and cand_domain == reg_domain and not reg_path \
+            and len(core_name(legal)) >= 3 and name_span:
         return Proof("registry_website_and_name", f"declared in Enhetsregisteret (hjemmeside) and shows the name",
                      name_span or "", 2), None
     email_dom = registered_domain(email.split("@", 1)[1]) if "@" in email else None
-    if email_dom and cand_domain == email_dom and email_dom not in WEBMAIL and len(core_name(legal)) >= 3 and name_span:
+    personal = bool(re.match(r"^[a-zæøå]+(\.[a-zæøå]+)?@", email)) and email.split("@")[0] not in (
+        "post", "info", "kontakt", "firmapost", "mail", "office", "admin", "regnskap", "faktura", "salg", "service")
+    if email_dom and cand_domain == email_dom and email_dom not in WEBMAIL and len(core_name(legal)) >= 3 and name_span \
+            and not (personal and reg_domain and reg_domain != email_dom):
         return Proof("registry_email_domain_and_name",
                      f"the site is on {email_dom}, the email domain the register lists for this company, and shows the name",
                      name_span, 2), None
@@ -342,8 +335,11 @@ def candidates(p: Profile, seeds: dict[str, list[str]] | None, nav_homepages: li
         out.append(Candidate(norm, source))
 
     add(rec.get("hjemmeside"), "registry_website")
-    email = rec.get("epostadresse") or ""
-    if "@" in email:
+    email = (rec.get("epostadresse") or "").lower()
+    reg_dom = registered_domain(rec.get("hjemmeside") or "") if rec.get("hjemmeside") else None
+    local = email.split("@", 1)[0] if "@" in email else ""
+    generic_box = local in ("post", "info", "kontakt", "firmapost", "mail", "office", "admin", "regnskap", "faktura", "salg", "service")
+    if "@" in email and (generic_box or not reg_dom or registered_domain(email.split("@", 1)[1]) == reg_dom):
         add(email.split("@", 1)[1], "registry_email")
     for url in p.context.get("wikidata_websites", []):
         add(url, "wikidata")
@@ -1039,7 +1035,7 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
             own_email = ((p.context.get("entity") or {}).get("epostadresse") or "")
             if "@" in own_email:
                 own.add(registered_domain(own_email.split("@", 1)[1]))
-            if dom_c in p.context.get("other_entity_domains", set()) and dom_c not in own:
+            if dom_c in p.context.get("other_entity_domains", set()):
                 rejected.append(f"{cand.url}: the register lists this domain for another company")
                 continue
             check_pv = contact_pv
