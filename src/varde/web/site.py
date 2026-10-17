@@ -75,7 +75,8 @@ JOB_WORDS = re.compile(r"(karriere|stilling|jobb|career|job|vacanc|ansett|rekrut
 CAREERS_TEXT = re.compile(r"^(karriere|ledige stillinger|stillinger|jobb hos oss|jobbe hos oss|careers?|jobs|"
                           r"jobb|vi ansetter|bli en av oss|work with us|join us|ledig stilling)$", re.I)
 NEWS_PATH = re.compile(r"/(nyheter|nyhet|aktuelt|news|blogg?|presse|artikler|articles|media|press)(/|$)", re.I)
-STUB_NEWS = re.compile(r"(hello world|hei,? verden|hallo,? verden|this is your first post|lorem ipsum|sample page|eksempelside|velkommen til wordpress)", re.I)
+STUB_NEWS = re.compile(r"(keep in touch with site visitors|add a blog post|this is a blog post|welcome to your blog|"
+                       r"ingen aktive kampanjer|ingen nyheter|no posts|coming soon|hello world|hei,? verden|hallo,? verden|this is your first post|lorem ipsum|sample page|eksempelside|velkommen til wordpress)", re.I)
 GENERIC_WORDS = {"holding", "invest", "eiendom", "service", "consulting", "bygg", "transport", "drift", "utvikling",
                  "handel", "norge", "norway", "nordic", "gruppen", "group", "partner", "partners", "regnskap", "data",
                  "it", "media", "design", "solutions", "eiendommer", "capital", "management", "ventures", "systems",
@@ -251,6 +252,21 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
     named = name_visible(text + " " + head_text, legal)
     reg_domain = registered_domain(rec.get("hjemmeside") or "") if rec.get("hjemmeside") else None
     cand_domain = registered_domain(pv.snap.final_url)
+    declared = {d for d in (reg_domain, registered_domain(rec["epostadresse"].split("@", 1)[1])
+                            if "@" in (rec.get("epostadresse") or "") else None) if d}
+    if not named and cand_domain in declared:
+        phone0 = phone_digits(rec.get("telefon") or rec.get("mobil"))
+        found0 = page_has_phone(html, phone0) if phone0 else None
+        if found0:
+            span0 = visible_span(html, r"(?<!\d)" + r"[\s.\u00a0-]?".join(phone0) + r"(?!\d)") or found0
+            return Proof("registry_declared_domain_and_phone",
+                         f"the register lists this domain for the company and its registry phone {phone0} is on the page", span0, 2), None
+        email0 = (rec.get("epostadresse") or "").lower()
+        if email0 and email0 in html.lower():
+            span0 = visible_span(html, re.escape(email0)) or email0
+            if span0 in html:
+                return Proof("registry_declared_domain_and_email",
+                             f"the register lists this domain for the company and its registry email {email0} is on the page", span0, 2), None
     if not named:
         return None, "legal name not visible on the page"
     name_span = visible_name_span(html, legal)
@@ -406,19 +422,28 @@ def _reads_like_prose(text: str) -> bool:
     return caps / len(words) < 0.5
 
 
-def handle_matches(handle: str, legal: str, site_dom: str) -> bool:
-    """A social handle must carry a distinctive part of the company's name or website domain."""
+def handle_matches(handle: str, legal: str, site_dom: str, people: list[str] | None = None) -> bool:
+    """A social handle must carry a distinctive part of the company's name or website domain,
+    and must not be a registered person's own account."""
     last = handle.split("/")[-1].lstrip("@")
     if last.startswith("profile.php?id=") or re.fullmatch(r"\d{8,}", last) or \
             (handle.startswith("youtube.com/channel/") and re.fullmatch(r"uc[\w-]{20,}", last.lower())):
         return True  # opaque platform ids carry no name to compare
     base = ascii_slug(last)
+    for person in people or []:
+        parts = [ascii_slug(w) for w in person.split() if len(ascii_slug(w)) >= 3]
+        if len(parts) >= 2 and parts[0] in base and parts[-1] in base:
+            return False  # a person's own account
     label = ascii_slug(site_dom.split(".")[0])
-    tokens = [ascii_slug(w) for w in core_name(legal).split() if len(ascii_slug(w)) >= 3]
-    tokens = [t for t in tokens if t not in ("holding", "norge", "norway", "gruppen", "group", "as", "og")]
     if label and len(label) >= 3 and (label in base or base in label):
         return True
-    return any(t in base for t in tokens)
+    tokens = [ascii_slug(w) for w in core_name(legal).split() if len(ascii_slug(w)) >= 3]
+    distinct = [t for t in tokens if t not in {ascii_slug(g) for g in GENERIC_WORDS} | {
+        "holding", "norge", "norway", "gruppen", "group", "og", "optikk", "frisor", "tannlege", "advokat", "regnskap",
+        "eiendom", "bygg", "elektro", "maskin", "transport", "service", "consult", "consulting", "design", "media"}]
+    if distinct:
+        return any(t in base for t in distinct)
+    return "".join(tokens) in base
 
 
 def _jsonld(pv: PageView) -> list[dict]:
@@ -519,7 +544,8 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
         if len(by_platform[platform]) > 2:
             continue  # many accounts on one platform usually means a directory or partner list
         page = origin[handle]
-        if raw not in page.snap.text or not handle_matches(handle, p.legal_name or "", site_dom):
+        people = [r.get("name") for r in p.context.get("roles", []) if r.get("kind") == "person" and r.get("name")]
+        if raw not in page.snap.text or not handle_matches(handle, p.legal_name or "", site_dom, people):
             continue
         span = text_span(page.snap.text, raw, context=20) or raw
         original = unescape(raw) if raw.startswith("http") else "https://" + handle
@@ -552,7 +578,7 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
             if absolute.startswith(("mailto:", "tel:")):
                 continue
             dom = registered_domain(absolute) or ""
-            if ATS.search(absolute):
+            if ATS.search(absolute) and not re.search(r"(-demo\.|demo-|//demo\.|sandbox|staging)", absolute, re.I):
                 key, kind = absolute.split("#")[0], "applicant_tracking_board"
             elif dom == site_dom and ((CAREERS_PATH.search(urlsplit(absolute).path) and (not text or JOB_WORDS.search(text)
                                                                                           or len(text) < 3))
@@ -714,6 +740,21 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
             if news:
                 break
     news = _drop_bursts(news)
+    site_title = fold(home.tree.css_first("title").text()) if home.tree.css_first("title") else ""
+    site_label = fold(site_dom.split(".")[0])
+    def newsy(title_txt: str, href: str) -> bool:
+        t = fold(title_txt)
+        if not t or t == site_title or t == site_label or (site_title and t in site_title.split(" | ")):
+            return False
+        if "|" in title_txt and fold(title_txt.split("|")[-1]) in (site_label, fold(p.legal_name or "")):
+            return False  # a page title such as "Hjem | Company"
+        words = t.split()
+        path = urlsplit(href or "").path.strip("/")
+        slugwords = re.split(r"[-_]", path.split("/")[-1]) if path else []
+        if len(words) <= 2 and not re.search(r"/\d{4}/", "/" + path + "/") and len(slugwords) < 3:
+            return False  # a category or section name, not an article
+        return True
+    news = [n for n in news if newsy(n[0], n[4])]
     seen_titles: set[str] = set()
     for title_txt, when, pv, raw, href in sorted(news, key=lambda x: x[1], reverse=True)[:20]:
         key = fold(title_txt)

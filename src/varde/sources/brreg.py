@@ -493,6 +493,7 @@ FIELD_EN = {
 
 def feed_events(p: Profile, items: list[dict]) -> None:
     m = "brreg_update_feed_v1"
+    items = [i for i in items if (i["update"].get("endringer") or i["update"].get("endringstype") not in ("Ukjent", None))]
     items = sorted(items, key=lambda i: i["update"].get("dato") or "", reverse=True)[:12]
     for item in items:
         upd, snap = item["update"], item["snap"]
