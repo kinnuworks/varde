@@ -108,3 +108,11 @@ def test_refresh_is_idempotent_and_typed():
 def test_core_name():
     assert core_name("DIPS AS") == "dips"
     assert core_name("Norsk Hydro ASA") == "norsk hydro"
+
+
+def test_directory_pages_never_prove_identity():
+    p = entity_profile()
+    rows = "".join(f"<li>Firma {i} AS, org.nr {n}</li>" for i, n in enumerate(["923609016", "984851006", "914778271"]))
+    html = "<html><body><h1>Bransjeoversikt</h1>" + "<p>Liste over firmaer i bransjen.</p>" * 10 + "<ul>" + rows + "<li>DIPS AS, org.nr 979 543 883</li></ul></body></html>"
+    proof, reason = prove(p, view(snap(html)), Candidate("https://katalog.no/", "search"))
+    assert proof is None and "other organisation numbers" in reason

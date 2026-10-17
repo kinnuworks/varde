@@ -213,6 +213,9 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
     group = {g for g in p.context.get("group_orgs", set())} | {s.get("organisasjonsnummer") for s in p.context.get("subunits", [])}
     others_labelled = labelled - {org} - group
     raw = _raw_find(html, _orgnr_raw_pattern(org))
+    crowd = (labelled | every) - {org} - group
+    if len(crowd) >= 3:
+        return None, f"page lists {len(crowd)} other organisation numbers (directory, supplier or client list)"
     if org in every and raw:
         span = text_span(html, raw, context=50) or raw
         return Proof("orgnr_on_page", f"organisation number {org} printed on {pv.snap.final_url}", span, 3), None

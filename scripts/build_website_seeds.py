@@ -32,7 +32,7 @@ WEBMAIL = {"gmail.com", "hotmail.com", "outlook.com", "live.com", "live.no", "on
            "me.com", "msn.com", "frisurf.no", "broadpark.no", "getmail.no", "start.no", "c2i.net", "altibox.no",
            "lyse.net", "hotmail.no", "outlook.no", "epost.no", "mail.com", "protonmail.com", "proton.me", "aol.com",
            "telenor.no", "googlemail.com", "gmx.com", "yahoo.no", "tele2.no", "bluezone.no", "ebnett.no"}
-RANK = {"crawl_orgnr": 0, "registry_email_domain": 1, "subunit_website": 2, "crawl_phone": 3, "crawl_email": 4}
+RANK = {"crawl_orgnr": 0, "registry_email_domain": 1, "subunit_website": 2, "crawl_phone": 3, "crawl_email": 4, "search": 5}
 
 
 def dom(value: str | None) -> str | None:
@@ -64,6 +64,7 @@ def main() -> None:
     ap.add_argument("--enheter", required=True)
     ap.add_argument("--underenheter")
     ap.add_argument("--universe", required=True)
+    ap.add_argument("--search", nargs="*", default=[], help="search_candidates.py output files")
     ap.add_argument("--out", default="src/varde/data/website_seeds.json.gz")
     args = ap.parse_args()
 
@@ -129,6 +130,15 @@ def main() -> None:
                 owners = email_owner.get(e, set())
                 if len(owners) == 1:
                     add(next(iter(owners)), d, "crawl_email")
+
+    for path in args.search:
+        for line in open(path, encoding="utf-8"):
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            for d in row.get("domains") or []:
+                add(row["orgnr"], d, "search")
 
     out = {org: [d for d, _ in sorted(ds.items(), key=lambda kv: RANK[kv[1]])][:4] for org, ds in seeds.items()}
     tags = {org: {d: seeds[org][d] for d in ds} for org, ds in out.items()}
