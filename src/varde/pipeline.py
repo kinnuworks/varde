@@ -145,10 +145,13 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
     await asyncio.gather(*(one(o) for o in orgs))
     retry = [profiles[o] for o in orgs if profiles[o].context.pop("web_retry", False)]
     if retry and budget.remaining_s() > 120:
+        await asyncio.sleep(min(20.0, max(0.0, budget.remaining_s() - 120)))
+        rsem = asyncio.Semaphore(8)
+
         async def again(p: Profile) -> None:
             p.claims = [c for c in p.claims if not (c["field"] == "official_website" and c["availability"] != "available")]
             p.sections.pop("web_presence", None)
-            async with sem:
+            async with rsem:
                 try:
                     await asyncio.wait_for(site.website(p, fetcher, shared["seeds"], []), timeout=60)
                 except asyncio.TimeoutError:

@@ -864,7 +864,7 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
         else:
             p.mark_field("social_profile", "web_presence", "ambiguous", f"Site-derived facts withheld: {why}.")
         return
-    transient = ("network", "timeout", "budget")
+    transient = ("network", "timeout", "budget", "http_429", "http_502", "http_503", "http_504")
     if rejected and any(any(r.endswith(": " + t) for t in transient) for r in rejected) and not p.context.get("web_retried"):
         p.context["web_retry"] = True
         p.context["web_retried"] = True
