@@ -116,3 +116,14 @@ def test_directory_pages_never_prove_identity():
     html = "<html><body><h1>Bransjeoversikt</h1>" + "<p>Liste over firmaer i bransjen.</p>" * 10 + "<ul>" + rows + "<li>DIPS AS, org.nr 979 543 883</li></ul></body></html>"
     proof, reason = prove(p, view(snap(html)), Candidate("https://katalog.no/", "search"))
     assert proof is None and "other organisation numbers" in reason
+
+
+def test_unique_name_on_matching_domain_with_town():
+    p = entity_profile(name="KRAUMAN AS", forretningsadresse={"adresse": ["Vei 1"], "postnummer": "5000", "poststed": "BERGEN"})
+    p.context["name_unique"] = True
+    html = "<html><body><h1>Krauman AS</h1>" + "<p>Vi lager ting i Bergen sentrum.</p>" * 10 + "</body></html>"
+    proof, _ = prove(p, view(snap(html, "https://krauman.no/")), Candidate("https://krauman.no/", "name_derived"))
+    assert proof and proof.method == "legal_name_unique"
+    p.context["name_unique"] = False
+    proof, _ = prove(p, view(snap(html, "https://krauman.no/")), Candidate("https://krauman.no/", "name_derived"))
+    assert proof is None

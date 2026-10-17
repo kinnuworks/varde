@@ -245,7 +245,10 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
         return Proof("orgnr_on_page", f"organisation number {org} printed on {pv.snap.final_url}", span, 3), None
     if others_labelled:
         return None, f"page names other organisation number(s) {sorted(others_labelled)[:3]}"
-    named = name_visible(text, legal)
+    title_node = pv.tree.css_first("title")
+    head_text = (title_node.text() if title_node else "") + " " + " ".join(
+        (n.attributes.get("content") or "") for n in pv.tree.css('meta[property="og:site_name"], meta[property="og:title"]'))
+    named = name_visible(text + " " + head_text, legal)
     reg_domain = registered_domain(rec.get("hjemmeside") or "") if rec.get("hjemmeside") else None
     cand_domain = registered_domain(pv.snap.final_url)
     if not named:
@@ -263,12 +266,32 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
         raw_email = html[idx:idx + len(email)]
         span = visible_span(html, re.escape(email)) or text_span(html, raw_email, context=30) or raw_email
         return Proof("registry_email_and_name", f"registry email {email} and legal name on page", span, 2), None
-    if cand.source == "registry_website" and reg_domain and cand_domain == reg_domain and distinctive(legal):
+    if cand.source == "registry_website" and reg_domain and cand_domain == reg_domain and len(core_name(legal)) >= 3 and name_span:
         return Proof("registry_website_and_name", f"declared in Enhetsregisteret (hjemmeside) and shows the name",
                      name_span or "", 2), None
+    email_dom = registered_domain(email.split("@", 1)[1]) if "@" in email else None
+    if email_dom and cand_domain == email_dom and email_dom not in WEBMAIL and len(core_name(legal)) >= 3 and name_span:
+        return Proof("registry_email_domain_and_name",
+                     f"the site is on {email_dom}, the email domain the register lists for this company, and shows the name",
+                     name_span, 2), None
     addr = rec.get("forretningsadresse") or {}
     street = (addr.get("adresse") or [""])[0]
     postcode = addr.get("postnummer") or ""
+    unique = p.context.get("name_unique") is True
+    label = ascii_slug((cand_domain or "").split(".")[0])
+    core_words = [ascii_slug(w) for w in core_name(legal).split() if ascii_slug(w)]
+    if unique and name_span and label in ("".join(core_words), "-".join(core_words).replace("-", "")):
+        town = (addr.get("poststed") or "").strip()
+        people = [r.get("name") for r in p.context.get("roles", []) if r.get("kind") == "person" and r.get("name")]
+        anchor = None
+        if town and len(town) >= 3 and re.search(rf"\b{re.escape(town)}\b", text, re.I):
+            anchor = f"registered post town {town.title()}"
+        else:
+            anchor = next((f"registered role holder {n}" for n in people if n and n.casefold() in text.casefold()), None)
+        if anchor:
+            return Proof("legal_name_unique",
+                         f"the domain spells the legal name, no other registered company has that name, and the site shows the {anchor}",
+                         name_span, 1), None
     if street and postcode and distinctive(legal) and street.casefold() in html.casefold() and postcode in html:
         idx = html.casefold().find(street.casefold())
         raw_street = html[idx:idx + len(street)]
@@ -778,6 +801,24 @@ def _rss_date(value: str) -> str | None:
         return None
 
 
+async def name_unique(p: Profile, f: Fetcher) -> bool | None:
+    """True when no other registered entity carries this company's name (legal-form words ignored)."""
+    core = core_name(p.legal_name or "")
+    if len(core) < 4:
+        return None
+    snap = await f.get("https://data.brreg.no/enhetsregisteret/api/enheter", params={"navn": core, "size": 50},
+                       company=p.organisation_number, accept_json=True)
+    if isinstance(snap, FetchError):
+        return None
+    try:
+        hits = (snap.json().get("_embedded") or {}).get("enheter") or []
+    except ValueError:
+        return None
+    others = [h for h in hits if h.get("organisasjonsnummer") != p.organisation_number
+              and core_name(h.get("navn") or "") == core and not h.get("slettedato")]
+    return not others
+
+
 # ---------------------------------------------------------------- driver
 async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, nav_homepages: list[str]) -> None:
     org = p.organisation_number
@@ -786,6 +827,8 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
         p.mark_field("official_website", "web_presence", "not_available",
                      "No website in the register, no company email domain and no other candidate to check.")
         return
+    if "name_unique" not in p.context and distinctive(p.legal_name or ""):
+        p.context["name_unique"] = await name_unique(p, f)
     rejected: list[str] = []
     for cand in cands:
         snap = await f.get(cand.url, company=org)
