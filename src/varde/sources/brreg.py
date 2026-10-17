@@ -149,8 +149,37 @@ async def entity(p: Profile, f: Fetcher) -> dict | None:
                     label="Part of a group")
     if rec.get("overordnetEnhet"):
         claim("parent_unit", "overordnetEnhet", rec["overordnetEnhet"], raw=rec["overordnetEnhet"], label="Parent unit in the public sector")
+    _entity_activity(p, snap, rec)
     p.mark("identity", "available")
     return rec
+
+
+def _entity_activity(p: Profile, snap: Snapshot, rec: dict) -> None:
+    """Dated register events as public activity, each quoting the exact register field."""
+    t = snap.text
+    m = "brreg_entity_activity_v1"
+    events = []
+    if rec.get("stiftelsesdato"):
+        events.append(("Founded", rec["stiftelsesdato"], json_span(t, "stiftelsesdato", rec["stiftelsesdato"])))
+    if rec.get("registreringsdatoEnhetsregisteret"):
+        events.append(("Registered in the Central Coordinating Register for Legal Entities", rec["registreringsdatoEnhetsregisteret"],
+                       json_span(t, "registreringsdatoEnhetsregisteret", rec["registreringsdatoEnhetsregisteret"])))
+    if rec.get("vedtektsdato"):
+        events.append(("Articles of association dated", rec["vedtektsdato"], json_span(t, "vedtektsdato", rec["vedtektsdato"])))
+    for h in rec.get("historiskeNavn") or []:
+        if h.get("tilDato") and h.get("navn"):
+            events.append((f"Name changed from {h['navn']}", h["tilDato"][:10], json_span(t, "historiskeNavn")))
+    if rec.get("konkursdato"):
+        events.append(("Bankruptcy opened", rec["konkursdato"], json_span(t, "konkursdato", rec["konkursdato"])))
+    if rec.get("underAvviklingDato"):
+        events.append(("Winding up started", rec["underAvviklingDato"], json_span(t, "underAvviklingDato", rec["underAvviklingDato"])))
+    for title, date, span in events:
+        if not span or not date:
+            continue
+        ev = _ev(p, snap, span, m)
+        p.add_claim("dated_activity", "activity", f"{title} ({date[:10]})", [ev], as_of=date[:10],
+                    label="Dated register event", extra={"title": title, "date": date[:10], "source": "Enhetsregisteret"},
+                    match={"method": "orgnr_in_request", "detail": f"{API}/enheter/{p.organisation_number}"})
 
 
 ROLE_GROUPS = {"DAGL", "LEDE", "STYR", "REVI", "REGN", "KONT", "DTPR", "DTSO", "KOMP", "INNH", "FFØR", "BEST", "SAM", "EIKM", "KIRK"}
@@ -528,3 +557,17 @@ def feed_events(p: Profile, items: list[dict]) -> None:
         ev = p.add_evidence(snap, source_class=CLASS, span=span, method=m, licence=LICENCE)
         p.add_claim("registry_update", "activity", value, [ev], as_of=(upd.get("dato") or "")[:10],
                     label="Registry update", match={"method": "orgnr_in_feed_record", "detail": "oppdateringer/enheter"})
+        day = (upd.get("dato") or "")[:10]
+        for d in details[:3]:
+            nv = d["new_value"]
+            if d["field"] in ("employees",):
+                title = f"Employee count updated to {nv}"
+            elif d["field"] == "latest filed accounts year":
+                title = f"Annual accounts for {nv} registered"
+            elif d["field"] in ("bankruptcy flag", "winding-up flag"):
+                continue
+            else:
+                title = f"{d['field'].capitalize()} changed"
+            p.add_claim("dated_activity", "activity", f"{title} ({day})", [ev], as_of=day, label="Dated register event",
+                        extra={"title": title, "date": day, "source": "Enhetsregisteret update feed"},
+                        match={"method": "orgnr_in_feed_record", "detail": "oppdateringer/enheter"})

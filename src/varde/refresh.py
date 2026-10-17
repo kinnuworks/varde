@@ -32,6 +32,7 @@ MULTI = {
     "social_profile": ("new_social_profile", "removed_social_profile"), "dated_news": ("new_news", None),
     "public_record": ("new_public_record", None), "group_relation": ("new_group_relation", "ended_group_relation"),
     "industry": ("new_industry_code", "removed_industry_code"), "registry_update": ("new_registry_update", None),
+    "dated_activity": ("new_dated_activity", None),
 }
 MATERIAL = {"changed_name", "changed_legal_form", "changed_address", "changed_website", "new_filing",
             "changed_bankruptcy_status", "changed_winding_up_status", "new_role", "ended_role",
