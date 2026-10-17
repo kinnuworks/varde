@@ -143,6 +143,18 @@ def template(p: Profile) -> dict:
             text += f"; operating income was {word} {_fmt_amount(prev['value']['amount'])} {cur} in {pyear}"
             cites.append(prev)
         add(text + ".", cites)
+        for field, label in (("annual_result", "The annual result"), ("equity", "Equity")):
+            xs = sorted([c for c in p.published(field) if c["value"].get("account_type") == "SELSKAP"],
+                        key=lambda c: c.get("reporting_period") or "")
+            if len(xs) >= 2:
+                a_, b_ = xs[-2], xs[-1]
+                fa, fb = float(a_["value"]["amount"]), float(b_["value"]["amount"])
+                if fa != fb:
+                    word = "rose" if fb > fa else "fell"
+                    ya = a_["reporting_period"].split("/")[-1][:4]
+                    yb = b_["reporting_period"].split("/")[-1][:4]
+                    add(f"{label} {word} from {_fmt_amount(a_['value']['amount'])} {a_['value']['currency']} in {ya} "
+                        f"to {_fmt_amount(b_['value']['amount'])} {b_['value']['currency']} in {yb}.", [a_, b_])
     else:
         fin_state = next((c for c in p.claims if c["field"] == "annual_accounts"), None)
         if fin_state and fin_state.get("reason"):
@@ -209,9 +221,18 @@ def template(p: Profile) -> dict:
             [x for x in (next((cl for cl in p.claims if cl["id"] == (c.get("current") or {}).get("claim_id")), None)
                          for c in changes[:3]) if x] or [name])
     updates = sorted(p.published("registry_update"), key=lambda c: c["value"].get("date") or "", reverse=True)
+    emp_points = []
+    for u in updates:
+        for ch in u["value"].get("changes") or []:
+            if ch["field"] == "employees" and isinstance(ch["new_value"], (int, float)):
+                emp_points.append((u["as_of"], ch["new_value"], u))
+    emp_points.sort(key=lambda x: x[0])
+    if len(emp_points) >= 2 and emp_points[0][1] != emp_points[-1][1]:
+        first, last = emp_points[0], emp_points[-1]
+        add(f"The registered employee count went from {first[1]} on {first[0]} to {last[1]} on {last[0]}.", [first[2], last[2]])
     if updates and not changes:
         bits, cites = [], []
-        seen_fields: set[str] = set()
+        seen_fields: set[str] = {"employees"} if len(emp_points) >= 2 else set()
         for u in updates:
             for ch in u["value"].get("changes") or []:
                 if ch["field"] in ("employee count registration date", "employee count date (NAV Aa-register)"):
