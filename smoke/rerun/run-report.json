@@ -1,11 +1,11 @@
 {
   "agent": "Varde",
   "version": "1.0.0",
-  "commit": "40ab542259246cbb39af9b6860a857eaeb7a97c2",
-  "run_id": "smoke-v2-rerun",
-  "started_at": "2026-10-17T11:36:00Z",
-  "completed_at": "2026-10-17T11:37:10Z",
-  "runtime_s": 70.3,
+  "commit": "f8a0b1edf514b83171b244f0db2e81d0013d56bb",
+  "run_id": "smoke-v3-rerun",
+  "started_at": "2026-10-17T15:47:56Z",
+  "completed_at": "2026-10-17T15:49:06Z",
+  "runtime_s": 70.0,
   "expected_count": 100,
   "emitted_envelopes": 100,
   "requests": 894,
@@ -15,8 +15,8 @@
     "www.alfabrannvern.no": 11,
     "www.greentec.com": 11,
     "api.doffin.no": 7,
-    "norgesagentene.no": 7,
     "www.tendencia.no": 7,
+    "norgesagentene.no": 7,
     "autocentrum.com": 7,
     "www.kongsbygg.no": 6,
     "www.tobb.no": 6,
@@ -33,20 +33,20 @@
     "www.centennial.no": 4,
     "casaverano.no": 4,
     "www.askoy-bergenelektro.no": 4,
-    "divinus.com": 4,
-    "backyardengineering.no": 4
+    "backyardengineering.no": 4,
+    "riskollen.no": 4
   },
   "third_party_cost_usd": 0,
   "llm_calls": 0,
-  "p50_ms": 9272,
-  "p95_ms": 26229,
+  "p50_ms": 9710,
+  "p95_ms": 26576,
   "budgets": {
     "max_requests": 4000,
     "time_budget_s": 2400.0,
     "per_company_requests": 40
   },
   "nav_index_built_at": "2026-10-17T09:08:11+00:00",
-  "seed_companies": 78775,
+  "seed_companies": 78978,
   "coverage": {
     "official_website": {
       "companies": 13,
@@ -86,7 +86,7 @@
     },
     "registry_update": {
       "companies": 100,
-      "facts": 309
+      "facts": 212
     },
     "group_relation": {
       "companies": 8,

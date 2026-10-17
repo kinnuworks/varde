@@ -1,18 +1,19 @@
 {
   "agent": "Varde",
   "version": "1.0.0",
-  "commit": "40ab542259246cbb39af9b6860a857eaeb7a97c2",
-  "run_id": "smoke-v2",
-  "started_at": "2026-10-17T11:34:36Z",
-  "completed_at": "2026-10-17T11:35:59Z",
-  "runtime_s": 83.4,
+  "commit": "f8a0b1edf514b83171b244f0db2e81d0013d56bb",
+  "run_id": "smoke-v3",
+  "started_at": "2026-10-17T15:46:36Z",
+  "completed_at": "2026-10-17T15:47:56Z",
+  "runtime_s": 79.3,
   "expected_count": 100,
   "emitted_envelopes": 100,
-  "requests": 882,
+  "requests": 895,
   "requests_by_host": {
     "data.brreg.no": 602,
     "www.bonaslisse-wines.com": 13,
     "www.alfabrannvern.no": 11,
+    "www.greentec.com": 11,
     "api.doffin.no": 7,
     "www.tendencia.no": 7,
     "norgesagentene.no": 7,
@@ -28,25 +29,24 @@
     "hippocampus.as": 5,
     "eiendomsinvest.no": 4,
     "hokas.no": 4,
-    "www.centennial.no": 4,
     "osu.no": 4,
+    "www.centennial.no": 4,
     "casaverano.no": 4,
     "www.askoy-bergenelektro.no": 4,
     "backyardengineering.no": 4,
-    "divinus.com": 4,
     "norcreative.com": 4
   },
   "third_party_cost_usd": 0,
   "llm_calls": 100,
-  "p50_ms": 9214,
-  "p95_ms": 27371,
+  "p50_ms": 10627,
+  "p95_ms": 29563,
   "budgets": {
     "max_requests": 4000,
     "time_budget_s": 2400.0,
     "per_company_requests": 40
   },
   "nav_index_built_at": "2026-10-17T09:08:11+00:00",
-  "seed_companies": 78775,
+  "seed_companies": 78978,
   "coverage": {
     "official_website": {
       "companies": 13,
@@ -86,7 +86,7 @@
     },
     "registry_update": {
       "companies": 100,
-      "facts": 309
+      "facts": 212
     },
     "group_relation": {
       "companies": 8,
