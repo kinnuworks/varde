@@ -152,6 +152,26 @@ def _raw_find(html: str, pattern: str) -> str | None:
     return m.group(0) if m else None
 
 
+def visible_span(html: str, needle_pattern: str, context: int = 40) -> str | None:
+    """Exact HTML around a match that sits in element text (between > and <), not in a script or attribute."""
+    for m in re.finditer(needle_pattern, html, re.I):
+        start, end = m.start(), m.end()
+        left = html.rfind(">", 0, start)
+        lt = html.rfind("<", 0, start)
+        if left < lt:
+            continue  # inside a tag
+        tag_open = html.rfind("<", 0, left + 1)
+        if re.match(r"<(script|style)\b", html[tag_open:tag_open + 8], re.I):
+            continue
+        right = html.find("<", end)
+        if right < 0:
+            continue
+        lo = max(left + 1, start - context)
+        hi = min(right, end + context)
+        return html[lo:hi].strip() or None
+    return None
+
+
 def _orgnr_raw_pattern(org: str) -> str:
     a, b, c = org[:3], org[3:6], org[6:]
     sep = r"(?:\s|&nbsp;|&#160;| |\.|-)?"
@@ -217,7 +237,7 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
     if len(crowd) >= 3:
         return None, f"page lists {len(crowd)} other organisation numbers (directory, supplier or client list)"
     if org in every and raw:
-        span = text_span(html, raw, context=50) or raw
+        span = visible_span(html, _orgnr_raw_pattern(org), context=50) or text_span(html, raw, context=50) or raw
         return Proof("orgnr_on_page", f"organisation number {org} printed on {pv.snap.final_url}", span, 3), None
     if others_labelled:
         return None, f"page names other organisation number(s) {sorted(others_labelled)[:3]}"
@@ -231,14 +251,14 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
     if phone:
         found = page_has_phone(html, phone)
         if found:
-            return Proof("registry_phone_and_name", f"registry phone {phone} and legal name on page",
-                         text_span(html, found, context=40) or found, 2), None
+            span = visible_span(html, r"(?<!\d)" + r"[\s.\u00a0-]?".join(phone) + r"(?!\d)") or text_span(html, found, context=40) or found
+            return Proof("registry_phone_and_name", f"registry phone {phone} and legal name on page", span, 2), None
     email = (rec.get("epostadresse") or "").lower()
     if email and email in html.lower():
         idx = html.lower().find(email)
         raw_email = html[idx:idx + len(email)]
-        return Proof("registry_email_and_name", f"registry email {email} and legal name on page",
-                     text_span(html, raw_email, context=30) or raw_email, 2), None
+        span = visible_span(html, re.escape(email)) or text_span(html, raw_email, context=30) or raw_email
+        return Proof("registry_email_and_name", f"registry email {email} and legal name on page", span, 2), None
     if cand.source == "registry_website" and reg_domain and cand_domain == reg_domain and distinctive(legal):
         return Proof("registry_website_and_name", f"declared in Enhetsregisteret (hjemmeside) and shows the name",
                      name_span or "", 2), None
