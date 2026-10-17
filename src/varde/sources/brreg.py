@@ -296,7 +296,9 @@ async def accounts(p: Profile, f: Fetcher) -> None:
     summary: list[dict] = []
     for year in years:
         journal = year.get("journalnr")
-        bounds = json_object_bounds(t, f'"journalnr":"{journal}"') if journal else None
+        rid = year.get("id")
+        bounds = json_object_bounds(t, f'{{"id":{rid},') if rid is not None else (
+            json_object_bounds(t, f'"journalnr":"{journal}"') if journal else None)
         start, end = bounds if bounds else (0, None)
         period = year.get("regnskapsperiode") or {}
         period_str = f"{period.get('fraDato')}/{period.get('tilDato')}"

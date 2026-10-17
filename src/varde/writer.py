@@ -19,14 +19,19 @@ import httpx
 from .profile import Profile
 from .synthesis import template, unknown_list, validate
 
+NUMBER_WORDS = re.compile(r"\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|"
+                          r"fifteen|twenty|thirty|forty|fifty|hundred|thousand|million|billion|dozen)\b", re.I)
+
 SYSTEM = (
     "You write short, factual company briefs for people deciding whether to apply to, sell to, partner with or "
     "invest in a Norwegian company. Use only the claims provided. Every sentence must cite the ids of the claims "
-    "it uses. Copy numbers, amounts and dates exactly as they appear in the claims; do not calculate, round, "
-    "convert or estimate anything. Translate Norwegian descriptions into plain English. Do not guess at anything "
+    "it uses. Copy numbers and dates exactly as they appear in the claims; do not calculate, round, count, "
+    "convert or estimate anything, and never write numbers as words. Write amounts with spaces as thousands "
+    "separators and the currency after the number, dropping a trailing .00 (\"790 400 865 NOK\"). Write dates as "
+    "they appear (YYYY-MM-DD). Translate Norwegian descriptions into plain English. Do not guess at anything "
     "the claims do not state. Write 4 to 7 sentences covering, where the claims allow: what the company does, its "
     "size and latest filed figures, who leads it, where it operates, hiring and public activity, and what changed "
-    "recently. Return JSON only: {\"sentences\": [{\"text\": \"...\", \"claim_ids\": [\"c1\"]}]}"
+    "recently. Group claims say in their label which way ownership runs; never reverse it. Return JSON only: {\"sentences\": [{\"text\": \"...\", \"claim_ids\": [\"c1\"]}]}"
 )
 
 
@@ -41,12 +46,30 @@ def enabled() -> bool:
     return False
 
 
+RELATION_LABEL = {
+    "subsidiary": "A subsidiary owned by {name}",
+    "parent": "The direct parent company that owns {name}",
+    "ultimate parent": "The ultimate parent company at the top of {name}'s group",
+    "group company": "Another company in the same group as {name} (no ownership link to it stated)",
+}
+
+
 def _claims_payload(p: Profile) -> list[dict]:
     keep = []
+    groups = 0
     for c in p.published():
         if c["field"] in ("organisation_number",) or c["field"].startswith("register_"):
             continue
-        item: dict[str, Any] = {"id": c["id"], "label": c.get("label") or c["field"], "value": c["value"]}
+        label = c.get("label") or c["field"]
+        if c["field"] == "group_relation":
+            rel = c["value"].get("relation")
+            if rel == "group company" or groups >= 8:
+                continue
+            groups += 1
+            label = RELATION_LABEL.get(rel, label).format(name=p.legal_name)
+        if c["field"] == "role_in_other_entity":
+            label = f"A role that {p.legal_name} itself holds in another entity"
+        item: dict[str, Any] = {"id": c["id"], "label": label, "value": c["value"]}
         for k in ("as_of", "reporting_period"):
             if c.get(k):
                 item[k] = c[k]
@@ -61,7 +84,7 @@ async def _call(client: httpx.AsyncClient, prompt: str) -> str | None:
         base = os.environ.get("VARDE_LLM_BASE_URL", "https://api.anthropic.com")
         r = await client.post(f"{base}/v1/messages", headers={
             "x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01", "content-type": "application/json"},
-            json={"model": model, "max_tokens": 900, "temperature": 0, "system": SYSTEM,
+            json={"model": model, "max_tokens": 6000, "system": SYSTEM,
                   "messages": [{"role": "user", "content": prompt}]})
         r.raise_for_status()
         body = r.json()
@@ -99,7 +122,7 @@ async def write(p: Profile, client: httpx.AsyncClient) -> dict:
         if not isinstance(sent, dict) or not isinstance(sent.get("text"), str):
             continue
         sent = {"text": sent["text"].strip(), "claim_ids": [i for i in sent.get("claim_ids", []) if i in ids]}
-        if sent["claim_ids"] and validate(p, sent) and "—" not in sent["text"]:
+        if sent["claim_ids"] and validate(p, sent) and "—" not in sent["text"] and not NUMBER_WORDS.search(sent["text"]):
             valid.append(sent)
     if len(valid) < 3:
         return base

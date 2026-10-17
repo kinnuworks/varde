@@ -336,22 +336,21 @@ async def doffin(p: Profile, f: Fetcher) -> None:
         p.error("doffin", snap)
         return
     body = snap.json()
-    for hit in body.get("hits") or body.get("notices") or []:
-        buyers = hit.get("buyer") or []
-        ids = {re.sub(r"\D", "", str(b.get("organizationId") or "")) for b in buyers if isinstance(b, dict)}
-        winners = hit.get("winner") or hit.get("winners") or []
-        wids = {re.sub(r"\D", "", str(w.get("organizationId") or "")) for w in winners if isinstance(w, dict)}
-        role = "buyer" if org in ids else "winner" if org in wids else None
-        if not role:
+    for hit in (body.get("hits") or [])[:20]:
+        buyers = [b for b in hit.get("buyer") or [] if isinstance(b, dict)]
+        ids = {re.sub(r"\D", "", str(b.get("organizationId") or "")) for b in buyers}
+        # Joint qualification schemes list many buyers and say nothing specific about one of them.
+        if org not in ids or len(ids) > 5 or hit.get("type") == "QUALIFICATION_SCHEME":
             continue
-        nid = hit.get("id") or hit.get("noticeId")
-        span = json_span(snap.text, "id", nid) if nid else None
+        nid = hit.get("id")
+        span = json_span(snap.text, "id", nid)
         ev = p.add_evidence(snap, source_class="official_api", span=span, method="doffin_search_v1",
                             licence="Doffin public API terms (DFØ)")
         date = (hit.get("publicationDate") or hit.get("issueDate") or "")[:10]
+        kind = (hit.get("type") or "notice").replace("_", " ").lower()
         p.add_claim("public_record", "activity",
-                    {"type": "Norwegian procurement notice" + (" as buyer" if role == "buyer" else " (winner)"),
-                     "date": date, "reference": nid, "title": hit.get("heading"),
+                    {"type": "Norwegian procurement notice published as buyer", "notice_type": kind, "date": date,
+                     "reference": nid, "title": hit.get("heading"), "deadline": hit.get("deadline"),
                      "url": f"https://doffin.no/notices/{nid}", "source": "Doffin"},
-                    [ev], as_of=date, label="Doffin notice",
-                    match={"method": f"{role}_organizationId_equals_orgnr", "detail": org})
+                    [ev], as_of=date, label="Doffin procurement notice",
+                    match={"method": "buyer_organizationId_equals_orgnr", "detail": org})
