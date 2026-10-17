@@ -32,7 +32,7 @@ WEBMAIL = {"gmail.com", "hotmail.com", "outlook.com", "live.com", "live.no", "on
            "me.com", "msn.com", "frisurf.no", "broadpark.no", "getmail.no", "start.no", "c2i.net", "altibox.no",
            "lyse.net", "hotmail.no", "outlook.no", "epost.no", "mail.com", "protonmail.com", "proton.me", "aol.com",
            "telenor.no", "googlemail.com", "gmx.com", "yahoo.no", "tele2.no", "bluezone.no", "ebnett.no"}
-RANK = {"crawl_orgnr": 0, "registry_email_domain": 1, "subunit_website": 2, "crawl_phone": 3, "crawl_email": 4, "search": 5}
+RANK = {"crawl_orgnr": 0, "registry_email_domain": 1, "subunit_website": 2, "crawl_phone": 3, "crawl_email": 4, "search": 5, "crawl_title": 6}
 
 
 def dom(value: str | None) -> str | None:
@@ -68,7 +68,21 @@ def main() -> None:
     ap.add_argument("--out", default="src/varde/data/website_seeds.json.gz")
     args = ap.parse_args()
 
-    universe = {json.loads(l)["organisation_number"] for l in gzip.open(args.universe, "rt")}
+    rows_u = [json.loads(l) for l in gzip.open(args.universe, "rt")]
+    universe = {r["organisation_number"] for r in rows_u}
+    # Distinctive legal names (without legal-form words) that belong to exactly one universe company.
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+    from varde.util import core_name, fold
+    from varde.web.site import distinctive
+    name_owner: dict[str, set[str]] = defaultdict(set)
+    for r in rows_u:
+        if r["legal_form"] in ("ENK", "BRL", "ESEK") or not distinctive(r["name"]):
+            continue
+        core = core_name(r["name"])
+        if len(core) >= 6 and (" " in core or len(core) >= 8):
+            name_owner[core].add(r["organisation_number"])
+    unique_names = {k: next(iter(v)) for k, v in name_owner.items() if len(v) == 1}
     phone_owner: dict[str, set[str]] = defaultdict(set)
     email_owner: dict[str, set[str]] = defaultdict(set)
     email_dom_owner: dict[str, set[str]] = defaultdict(set)
@@ -120,6 +134,17 @@ def main() -> None:
                 add(o, d, "crawl_orgnr")
             if orgs:
                 continue
+            title = fold(row.get("title") or "")
+            if title:
+                words = title.split()
+                hits = set()
+                for i in range(len(words)):
+                    for j in range(i + 1, min(len(words), i + 6) + 1):
+                        org = unique_names.get(" ".join(words[i:j]))
+                        if org:
+                            hits.add(org)
+                if len(hits) == 1:
+                    add(next(iter(hits)), d, "crawl_title")
             phones = row.get("phones") or []
             if len(phones) <= 4:
                 for p in phones:
