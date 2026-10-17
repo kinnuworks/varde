@@ -143,6 +143,17 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
             timing[org] = int((time.monotonic() - start) * 1000)
 
     await asyncio.gather(*(one(o) for o in orgs))
+    retry = [profiles[o] for o in orgs if profiles[o].context.pop("web_retry", False)]
+    if retry and budget.remaining_s() > 120:
+        async def again(p: Profile) -> None:
+            p.claims = [c for c in p.claims if not (c["field"] == "official_website" and c["availability"] != "available")]
+            p.sections.pop("web_presence", None)
+            async with sem:
+                try:
+                    await asyncio.wait_for(site.website(p, fetcher, shared["seeds"], []), timeout=60)
+                except asyncio.TimeoutError:
+                    p.mark_field("official_website", "web_presence", "failed", "Website step timed out twice.")
+        await asyncio.gather(*(again(p) for p in retry))
     await fetcher.close()
     for org in orgs:
         diff(profiles[org], previous.get(org))

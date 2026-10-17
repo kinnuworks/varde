@@ -737,6 +737,9 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
         else:
             p.mark_field("social_profile", "web_presence", "ambiguous", f"Site-derived facts withheld: {why}.")
         return
+    transient = ("network", "timeout", "budget")
+    if rejected and all(any(r.endswith(": " + t) for t in transient) for r in rejected):
+        p.context["web_retry"] = True
     reg = (p.context.get("entity") or {}).get("hjemmeside")
     esnap = p.context.get("entity_snap")
     if reg and esnap is not None and any(r.startswith(normalise_url(reg) or "~") and "other organisation" in r for r in rejected):

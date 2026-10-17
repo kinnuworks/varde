@@ -62,7 +62,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--crawl", nargs="+", required=True)
     ap.add_argument("--enheter", required=True)
-    ap.add_argument("--underenheter", required=True)
+    ap.add_argument("--underenheter")
     ap.add_argument("--universe", required=True)
     ap.add_argument("--out", default="src/varde/data/website_seeds.json.gz")
     args = ap.parse_args()
@@ -96,7 +96,7 @@ def main() -> None:
         if len(owners) <= 3:
             for org in owners:
                 add(org, d, "registry_email_domain")
-    for rec in stream(args.underenheter):
+    for rec in (stream(args.underenheter) if args.underenheter else []):
         parent = rec.get("overordnetEnhet")
         if parent in universe:
             add(parent, dom(rec.get("hjemmeside")), "subunit_website")
@@ -104,7 +104,10 @@ def main() -> None:
     crowded = 0
     for path in args.crawl:
         for line in open(path, encoding="utf-8"):
-            row = json.loads(line)
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
             if row.get("error") or not row.get("final_url"):
                 continue
             d = dom(row["final_url"]) or row["domain"]
