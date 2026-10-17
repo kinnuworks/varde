@@ -69,7 +69,8 @@ ATS = re.compile(r"(teamtailor\.com|webcruiter\.(no|com)|jobbnorge\.no|recman\.(
                  r"easycruit\.com|reachmee\.com|jobylon\.com|varbi\.com|workable\.com|lever\.co|"
                  r"greenhouse\.io|smartrecruiters\.com|recruitee\.com|talentech\.com|jobbsafari\.no)", re.I)
 CAREERS_PATH = re.compile(r"/(karriere|career|careers|jobb|jobs|ledige[-_]stillinger|stillinger|jobbe-hos-oss|"
-                          r"jobb-hos-oss|bli-en-av-oss|work-with-us|join-us|vacancies|rekruttering)(/|$|\.)", re.I)
+                          r"jobb-hos-oss|vacancies|rekruttering)(/|$|\.)", re.I)
+JOB_WORDS = re.compile(r"(karriere|stilling|jobb|career|job|vacanc|ansett|rekrutt|søk|apply|work with us|join our team)", re.I)
 CAREERS_TEXT = re.compile(r"^(karriere|ledige stillinger|stillinger|jobb hos oss|jobbe hos oss|careers?|jobs|"
                           r"jobb|vi ansetter|bli en av oss|work with us|join us|ledig stilling)$", re.I)
 NEWS_PATH = re.compile(r"/(nyheter|nyhet|aktuelt|news|blogg?|presse|artikler|articles|media|press)(/|$)", re.I)
@@ -514,7 +515,9 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
             dom = registered_domain(absolute) or ""
             if ATS.search(absolute):
                 key, kind = absolute.split("#")[0], "applicant_tracking_board"
-            elif dom == site_dom and (CAREERS_PATH.search(urlsplit(absolute).path) or CAREERS_TEXT.match(text or "")):
+            elif dom == site_dom and ((CAREERS_PATH.search(urlsplit(absolute).path) and (not text or JOB_WORDS.search(text)
+                                                                                          or len(text) < 3))
+                                      or CAREERS_TEXT.match(text or "")):
                 key, kind = absolute.split("#")[0].rstrip("/"), "careers_page"
             else:
                 continue
@@ -611,11 +614,24 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
                     news.append((item["headline"], when, home, raw, item.get("url") or home.snap.final_url))
     if not news:
         listing = next((a for a, _r, _t in home.links if registered_domain(a) == site_dom and NEWS_PATH.search(urlsplit(a).path)), None)
-        if listing:
-            snap = await f.get(listing, company=org)
-            if not isinstance(snap, FetchError):
-                lv = view(snap)
-                news.extend(_listing_news(lv, founded))
+        tries = [listing] if listing else []
+        if not tries:
+            origin = "{0.scheme}://{0.netloc}".format(urlsplit(home.snap.final_url))
+            tries = [origin + "/nyheter", origin + "/aktuelt"]
+        for url in tries:
+            snap = await f.get(url, company=org)
+            if isinstance(snap, FetchError) or "html" not in (snap.content_type or "html"):
+                continue
+            if registered_domain(snap.final_url) != site_dom or snap.final_url.rstrip("/") == home.snap.final_url.rstrip("/"):
+                continue
+            lv = view(snap)
+            found = _listing_news(lv, founded)
+            if not found:
+                found = await _article_dates(f, org, lv, site_dom, founded)
+            news.extend(found)
+            if news:
+                break
+    news = _drop_bursts(news)
     seen_titles: set[str] = set()
     for title_txt, when, pv, raw, href in sorted(news, key=lambda x: x[1], reverse=True)[:10]:
         key = fold(title_txt)
@@ -698,6 +714,55 @@ def _listing_news(lv: PageView, founded: str | None) -> list[tuple[str, str, Pag
         out.append((title_txt, when, lv, raw, href))
         if len(out) >= 10:
             break
+    return out
+
+
+def _drop_bursts(items: list) -> list:
+    """Catalogue imports publish many posts within minutes; those are not news."""
+    if len(items) < 3:
+        return items
+    times = sorted(x[1] for x in items)
+    keep = []
+    for item in items:
+        t = item[1]
+        close = sum(1 for u in times if u[:13] == t[:13])
+        if close >= 3 and len(t) > 10:
+            continue
+        keep.append(item)
+    return keep
+
+
+async def _article_dates(f: Fetcher, org: str, lv: PageView, site_dom: str, founded: str | None) -> list:
+    """Open up to three article links from a news listing and read their declared publication date."""
+    base = lv.snap.final_url.rstrip("/")
+    links = []
+    for absolute, _raw, text in lv.links:
+        a = absolute.split("#")[0].rstrip("/")
+        if (registered_domain(a) == site_dom and a.startswith(base + "/") and a != base and len(text) >= 12
+                and a not in [x[0] for x in links] and not STUB_NEWS.search(text)):
+            links.append((a, re.sub(r"\s+", " ", text).strip()))
+    out = []
+    for url, anchor in links[:3]:
+        snap = await f.get(url, company=org)
+        if isinstance(snap, FetchError):
+            continue
+        av = view(snap)
+        raw = None
+        when = None
+        for pat in (r'<meta[^>]+property="article:published_time"[^>]+content="([^"]+)"',
+                    r'"datePublished"\s*:\s*"([^"]+)"', r'<time[^>]+datetime="([^"]+)"'):
+            m = re.search(pat, snap.text)
+            if m:
+                when = _date_ok(m.group(1), founded)
+                raw = m.group(0)
+                if when:
+                    break
+        if not when or not raw:
+            continue
+        h1 = av.tree.css_first("h1")
+        title = re.sub(r"\s+", " ", h1.text()).strip() if h1 else anchor
+        if 8 <= len(title) <= 200 and not STUB_NEWS.search(title):
+            out.append((title, when, av, raw, snap.final_url))
     return out
 
 

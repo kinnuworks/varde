@@ -24,6 +24,12 @@ FORMS_EN = {
     "VPFO": "securities fund", "BBL": "housing association", "IKJP": "other legal person", "KIRK": "church body",
 }
 
+try:
+    from importlib import resources as _res
+    NACE_EN: dict[str, str] = json.loads(_res.files("varde.data").joinpath("nace_en.json").read_text(encoding="utf-8"))
+except (FileNotFoundError, ModuleNotFoundError, ValueError):
+    NACE_EN = {}
+
 ROLE_ORDER = ["DAGL", "LEDE", "NEST", "MEDL", "STYR", "INNH", "DTPR", "DTSO", "KOMP", "REVI", "REGN"]
 
 
@@ -49,9 +55,10 @@ def validate(p: Profile, sentence: dict) -> bool:
                       [c.get("reporting_period") for c in cited], ensure_ascii=False, default=str)
     blob_digits = re.sub(r"[^\d]", " ", blob)
     available = set(blob_digits.split())
+    exact = {a.lstrip("0") or "0" for a in available}
     for token in _num_tokens(sentence["text"]):
         token = token.lstrip("0") or "0"
-        if not any(a.lstrip("0") == token or token in a for a in available):
+        if token not in exact:
             return False
     return True
 
@@ -96,7 +103,14 @@ def template(p: Profile) -> dict:
     elif activity:
         add(f"Its registered activity: \"{_sentence_cut(activity['value']) or activity['value'][:200]}\"", [activity])
     if industry:
-        add(f"Its main industry code is {industry['value']['code']} ({industry['value']['description'].lower()}).", [industry])
+        code = industry["value"]["code"]
+        english = NACE_EN.get(code) or NACE_EN.get(code[:5].rstrip("0").rstrip(".")) or NACE_EN.get(code[:4])
+        if code.startswith("00"):
+            pass
+        elif english:
+            add(f"Its main industry code is {code}: {english.lower()}.", [industry])
+        else:
+            add(f"Its main industry code is {code} ({industry['value']['description'].lower()}).", [industry])
 
     emp = _first(p, "registered_employees")
     workplaces = p.published("workplace")

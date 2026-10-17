@@ -23,15 +23,11 @@ NUMBER_WORDS = re.compile(r"\b(two|three|four|five|six|seven|eight|nine|ten|elev
                           r"fifteen|twenty|thirty|forty|fifty|hundred|thousand|million|billion|dozen)\b", re.I)
 
 SYSTEM = (
-    "You write short, factual company briefs for people deciding whether to apply to, sell to, partner with or "
-    "invest in a Norwegian company. Use only the claims provided. Every sentence must cite the ids of the claims "
-    "it uses. Copy numbers and dates exactly as they appear in the claims; do not calculate, round, count, "
-    "convert or estimate anything, and never write numbers as words. Write amounts with spaces as thousands "
-    "separators and the currency after the number, dropping a trailing .00 (\"790 400 865 NOK\"). Write dates as "
-    "they appear (YYYY-MM-DD). Translate Norwegian descriptions into plain English. Do not guess at anything "
-    "the claims do not state. Write 4 to 7 sentences covering, where the claims allow: what the company does, its "
-    "size and latest filed figures, who leads it, where it operates, hiring and public activity, and what changed "
-    "recently. Group claims say in their label which way ownership runs; never reverse it. Return JSON only: {\"sentences\": [{\"text\": \"...\", \"claim_ids\": [\"c1\"]}]}"
+    "You translate a Norwegian company's own registered description of its business into one or two plain "
+    "English sentences for a company profile. Use only the texts provided. Translate faithfully: do not add "
+    "activities, markets, customers, sizes, places, dates or numbers that are not in the texts, and do not "
+    "praise the company. Start with the company name. If the texts say nothing useful about what the company "
+    "does, return an empty string. Return JSON only: {\"text\": \"...\"}"
 )
 
 
@@ -90,7 +86,7 @@ async def _call(client: httpx.AsyncClient, prompt: str) -> str | None:
         base = os.environ.get("VARDE_LLM_BASE_URL", "https://api.anthropic.com")
         r = await client.post(f"{base}/v1/messages", headers={
             "x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01", "content-type": "application/json"},
-            json={"model": model, "max_tokens": 1500, "thinking": {"type": "disabled"}, "system": SYSTEM,
+            json={"model": model, "max_tokens": 400, "thinking": {"type": "disabled"}, "system": SYSTEM,
                   "messages": [{"role": "user", "content": prompt}]})
         r.raise_for_status()
         body = r.json()
@@ -104,33 +100,35 @@ async def _call(client: httpx.AsyncClient, prompt: str) -> str | None:
     return r.json()["choices"][0]["message"]["content"]
 
 
+DESCRIBE = ("registered_activity", "statutory_purpose", "website_description")
+
+
 async def write(p: Profile, client: httpx.AsyncClient) -> dict:
+    """Template summary, with the 'what it does' sentence translated by the model when possible."""
     base = template(p)
-    if not p.legal_name:
+    sources = [c for f in DESCRIBE for c in p.published(f)]
+    if not p.legal_name or not sources:
         return base
-    payload = {"company": p.legal_name, "organisation_number": p.organisation_number,
-               "claims": _claims_payload(p),
-               "changes_since_previous_run": [c["explanation"] for c in p.changes[:8]]}
+    payload = {"company": p.legal_name,
+               "texts": {c["field"]: c["value"] for c in sources},
+               "industry": next((c["value"].get("description") for c in p.published("industry")
+                                 if c["value"].get("rank") == 1), None)}
     try:
         text = await _call(client, json.dumps(payload, ensure_ascii=False, default=str))
     except (httpx.HTTPError, KeyError, ValueError):
         return base
-    if not text:
-        return base
-    m = re.search(r"\{.*\}", text, re.S)
+    m = re.search(r"\{.*\}", text or "", re.S)
     try:
-        sentences = json.loads(m.group(0)).get("sentences", []) if m else []
+        out = (json.loads(m.group(0)).get("text") or "").strip() if m else ""
     except ValueError:
         return base
-    ids = {c["id"] for c in p.claims}
-    valid = []
-    for sent in sentences:
-        if not isinstance(sent, dict) or not isinstance(sent.get("text"), str):
-            continue
-        sent = {"text": sent["text"].strip(), "claim_ids": [i for i in sent.get("claim_ids", []) if i in ids]}
-        if sent["claim_ids"] and validate(p, sent) and "—" not in sent["text"] and not NUMBER_WORDS.search(sent["text"]):
-            valid.append(sent)
-    if len(valid) < 3:
+    if not out or re.search(r"\d", out) or NUMBER_WORDS.search(out) or "—" in out or len(out) > 420:
         return base
-    return {"text": " ".join(s["text"] for s in valid), "sentences": valid, "unknowns": unknown_list(p),
-            "writer": f"model:{os.environ.get('VARDE_MODEL')}"}
+    sent = {"text": out, "claim_ids": [c["id"] for c in sources]}
+    if not validate(p, sent):
+        return base
+    describe_ids = {c["id"] for c in sources}
+    kept = [x for x in base["sentences"] if not (set(x["claim_ids"]) & describe_ids)]
+    sentences = kept[:1] + [sent] + kept[1:]
+    return {"text": " ".join(x["text"] for x in sentences), "sentences": sentences,
+            "unknowns": base["unknowns"], "writer": "template_v2+model_description"}
