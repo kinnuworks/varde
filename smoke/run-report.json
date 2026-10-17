@@ -1,0 +1,112 @@
+{
+  "agent": "Varde",
+  "version": "1.0.0",
+  "commit": "b97cc9fad3a59e942820a4cc03b6a9e549aeedd1",
+  "run_id": "smoke-001",
+  "started_at": "2026-10-17T09:43:11Z",
+  "completed_at": "2026-10-17T09:45:42Z",
+  "runtime_s": 150.6,
+  "expected_count": 100,
+  "emitted_envelopes": 100,
+  "requests": 842,
+  "requests_by_host": {
+    "data.brreg.no": 510,
+    "api.doffin.no": 100,
+    "www.bonaslisse-wines.com": 13,
+    "www.tobb.no": 6,
+    "www.greentec.com": 6,
+    "blindheimmaskin.no": 5,
+    "akbk.no": 5,
+    "eiendomsinvest.no": 4,
+    "osu.no": 4,
+    "casaverano.no": 4,
+    "glasstek-ostfold.no": 4,
+    "www.centennial.no": 4,
+    "autocentrum.com": 4,
+    "norcreative.com": 4,
+    "www.wikidata.org": 3,
+    "voileagency.no": 3,
+    "www.kongsbygg.no": 3,
+    "sntinvest.com": 3,
+    "www.dentalestetic.no": 3,
+    "voileagency.com": 3,
+    "www.avm.no": 3,
+    "www.tendencia.no": 3,
+    "norgesagentene.no": 3,
+    "ranvik.com": 3,
+    "www.hugedomains.com": 3
+  },
+  "third_party_cost_usd": 0,
+  "llm_calls": 100,
+  "p50_ms": 15386,
+  "p95_ms": 66967,
+  "budgets": {
+    "max_requests": 4000,
+    "time_budget_s": 2400.0,
+    "per_company_requests": 40
+  },
+  "nav_index_built_at": "2026-10-17T09:08:11+00:00",
+  "seed_companies": 69691,
+  "coverage": {
+    "official_website": {
+      "companies": 13,
+      "facts": 13
+    },
+    "social_profile": {
+      "companies": 7,
+      "facts": 10
+    },
+    "hiring_signal": {
+      "companies": 2,
+      "facts": 2
+    },
+    "dated_news": {
+      "companies": 0,
+      "facts": 0
+    },
+    "job_ad": {
+      "companies": 1,
+      "facts": 1
+    },
+    "public_record": {
+      "companies": 6,
+      "facts": 6
+    },
+    "role": {
+      "companies": 100,
+      "facts": 397
+    },
+    "workplace": {
+      "companies": 78,
+      "facts": 78
+    },
+    "revenue": {
+      "companies": 83,
+      "facts": 215
+    },
+    "registry_update": {
+      "companies": 100,
+      "facts": 309
+    },
+    "group_relation": {
+      "companies": 8,
+      "facts": 51
+    },
+    "lei": {
+      "companies": 6,
+      "facts": 6
+    }
+  },
+  "validation": {
+    "passed": true,
+    "checks": {
+      "one_envelope_per_input": true,
+      "unique_organisation_numbers": true,
+      "every_published_claim_has_evidence": true,
+      "every_published_claim_has_exact_span": true,
+      "states_valid": true
+    },
+    "claims_without_exact_span": 0
+  },
+  "changes": 0
+}
