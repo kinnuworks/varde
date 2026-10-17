@@ -57,7 +57,13 @@ RELATION_LABEL = {
 def _claims_payload(p: Profile) -> list[dict]:
     keep = []
     groups = 0
+    caps = {"registry_update": 4, "workplace": 6, "role": 10, "public_record": 5, "job_ad": 5, "dated_news": 4,
+            "social_profile": 6, "role_in_other_entity": 3, "hiring_signal": 2}
+    seen: dict[str, int] = {}
     for c in p.published():
+        seen[c["field"]] = seen.get(c["field"], 0) + 1
+        if seen[c["field"]] > caps.get(c["field"], 99):
+            continue
         if c["field"] in ("organisation_number",) or c["field"].startswith("register_"):
             continue
         label = c.get("label") or c["field"]
@@ -74,7 +80,7 @@ def _claims_payload(p: Profile) -> list[dict]:
             if c.get(k):
                 item[k] = c[k]
         keep.append(item)
-    return keep[:140]
+    return keep[:90]
 
 
 async def _call(client: httpx.AsyncClient, prompt: str) -> str | None:
@@ -84,7 +90,7 @@ async def _call(client: httpx.AsyncClient, prompt: str) -> str | None:
         base = os.environ.get("VARDE_LLM_BASE_URL", "https://api.anthropic.com")
         r = await client.post(f"{base}/v1/messages", headers={
             "x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01", "content-type": "application/json"},
-            json={"model": model, "max_tokens": 6000, "system": SYSTEM,
+            json={"model": model, "max_tokens": 1500, "thinking": {"type": "disabled"}, "system": SYSTEM,
                   "messages": [{"role": "user", "content": prompt}]})
         r.raise_for_status()
         body = r.json()

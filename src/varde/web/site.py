@@ -455,17 +455,22 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
                         [ev(home, raw_title)], label="Website title")
 
     # Social profiles: links on the verified site, plus JSON-LD sameAs.
+    pages = [home] + [x for x in p.context.get("extra_pages", []) if x is not home]
     socials: dict[str, str] = {}
-    for absolute, raw, _text in home.links:
-        handle = _social(absolute)
-        if handle and handle not in socials:
-            socials[handle] = raw
-    for item in _jsonld(home):
-        same = item.get("sameAs")
-        for url in same if isinstance(same, list) else [same] if isinstance(same, str) else []:
-            handle = _social(url)
+    origin: dict[str, PageView] = {}
+    for page in pages:
+        for absolute, raw, _text in page.links:
+            handle = _social(absolute)
             if handle and handle not in socials:
-                socials[handle] = url.replace("/", "\\/") if url.replace("/", "\\/") in home.snap.text else url
+                socials[handle] = raw
+                origin[handle] = page
+        for item in _jsonld(page):
+            same = item.get("sameAs")
+            for url in same if isinstance(same, list) else [same] if isinstance(same, str) else []:
+                handle = _social(url)
+                if handle and handle not in socials:
+                    socials[handle] = url.replace("/", "\\/") if url.replace("/", "\\/") in page.snap.text else url
+                    origin[handle] = page
     by_platform: dict[str, list[str]] = {}
     for handle in socials:
         by_platform.setdefault(handle.split("/")[0], []).append(handle)
@@ -473,11 +478,12 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
         platform = handle.split("/")[0]
         if len(by_platform[platform]) > 2:
             continue  # many accounts on one platform usually means a directory or partner list
-        if raw not in home.snap.text:
+        page = origin[handle]
+        if raw not in page.snap.text:
             continue
-        span = text_span(home.snap.text, raw, context=20) or raw
+        span = text_span(page.snap.text, raw, context=20) or raw
         original = unescape(raw) if raw.startswith("http") else "https://" + handle
-        p.add_claim("social_profile", "web_presence", handle, [ev(home, span)],
+        p.add_claim("social_profile", "web_presence", handle, [ev(page, span)],
                     label=f"{platform.split('.')[0].capitalize()} profile linked from the verified website",
                     match={"method": "linked_from_verified_site", "detail": site_dom},
                     extra={"url": original.replace("\\/", "/")})
@@ -500,19 +506,27 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
 
     # Hiring: careers pages and applicant-tracking boards linked from the site.
     hiring_urls: dict[str, tuple[str, str]] = {}
-    for absolute, raw, text in home.links:
-        if absolute.startswith(("mailto:", "tel:")):
-            continue
-        dom = registered_domain(absolute) or ""
-        if ATS.search(absolute):
-            hiring_urls.setdefault(absolute.split("#")[0], (raw, "applicant_tracking_board"))
-        elif dom == site_dom and (CAREERS_PATH.search(urlsplit(absolute).path) or CAREERS_TEXT.match(text or "")):
-            hiring_urls.setdefault(absolute.split("#")[0].rstrip("/"), (raw, "careers_page"))
+    hiring_page: dict[str, PageView] = {}
+    for page in pages:
+        for absolute, raw, text in page.links:
+            if absolute.startswith(("mailto:", "tel:")):
+                continue
+            dom = registered_domain(absolute) or ""
+            if ATS.search(absolute):
+                key, kind = absolute.split("#")[0], "applicant_tracking_board"
+            elif dom == site_dom and (CAREERS_PATH.search(urlsplit(absolute).path) or CAREERS_TEXT.match(text or "")):
+                key, kind = absolute.split("#")[0].rstrip("/"), "careers_page"
+            else:
+                continue
+            if key not in hiring_urls:
+                hiring_urls[key] = (raw, kind)
+                hiring_page[key] = page
     for url, (raw, kind) in list(hiring_urls.items())[:3]:
-        if raw not in home.snap.text:
+        page = hiring_page[url]
+        if raw not in page.snap.text:
             continue
-        span = text_span(home.snap.text, raw, context=30) or raw
-        p.add_claim("hiring_signal", "activity", url, [ev(home, span)],
+        span = text_span(page.snap.text, raw, context=30) or raw
+        p.add_claim("hiring_signal", "activity", url, [ev(page, span)],
                     label="Careers page on the verified website" if kind == "careers_page" else "Job board linked from the verified website",
                     match={"method": "linked_from_verified_site", "detail": site_dom}, extra={"signal_type": kind})
     boards = [u for u, (_r, kind) in hiring_urls.items() if kind == "applicant_tracking_board" and "teamtailor.com" in u]
@@ -733,8 +747,16 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
                 if re.search(r"(kontakt|contact|om-oss|om_oss|about|personvern|privacy|salgsbetingelser|vilkar|vilkår|"
                              r"policies/|terms|impressum|kjopsvilkar|kjøpsvilkår)", a, re.I):
                     links.append(a)
-            links.sort(key=lambda a: 0 if re.search(r"kontakt|contact", a, re.I) else 1 if re.search(r"om-oss|about", a, re.I) else 2)
-            for link in links[:3]:
+            def rank(a: str) -> int:
+                if re.search(r"kontakt|contact", a, re.I):
+                    return 0
+                if re.search(r"kjopsvilkar|kjøpsvilkår|salgsbetingelser|vilkar|vilkår|terms|policies/", a, re.I):
+                    return 1
+                if re.search(r"om-oss|om_oss|about", a, re.I):
+                    return 2
+                return 3
+            links.sort(key=rank)
+            for link in links[:4]:
                 csnap = await f.get(link, company=org)
                 if isinstance(csnap, FetchError):
                     continue
@@ -763,6 +785,8 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
                     extra={"url": snap.final_url, "exclusive": excl})
         p.context["verified_site"] = snap.final_url
         if excl:
+            if contact_pv is not None and contact_pv is not pv and exclusive(p, contact_pv)[0]:
+                p.context["extra_pages"] = [contact_pv]
             await mine(p, f, pv, e)
         else:
             p.mark_field("social_profile", "web_presence", "ambiguous", f"Site-derived facts withheld: {why}.")

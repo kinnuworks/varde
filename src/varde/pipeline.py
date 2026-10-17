@@ -159,7 +159,7 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
         diff(profiles[org], previous.get(org))
     llm_calls = 0
     if writer.enabled() and budget.remaining_s() > 120:
-        wsem = asyncio.Semaphore(8)
+        wsem = asyncio.Semaphore(int(os.environ.get("VARDE_LLM_CONCURRENCY", "24")))
         async with httpx.AsyncClient(timeout=60) as client:
             async def summarise(p: Profile) -> None:
                 nonlocal llm_calls

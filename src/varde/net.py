@@ -28,7 +28,7 @@ import httpx
 from . import __version__
 from .util import sha256_bytes, utc_now
 
-USER_AGENT = f"Varde/{__version__} (+https://github.com/kinnuworks/varde; company research agent)"
+USER_AGENT = f"Varde/{__version__} (+https://github.com/kinnuworks/varde)"
 MAX_BYTES = 2_000_000
 MAX_REDIRECTS = 5
 
