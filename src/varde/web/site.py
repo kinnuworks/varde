@@ -695,6 +695,8 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
             found = _listing_news(lv, founded)
             if not found:
                 found = await _article_dates(f, org, lv, site_dom, founded)
+            if not found:
+                found = await _sitemap_dates(f, org, lv, site_dom, founded)
             news.extend(found)
             if news:
                 break
@@ -830,6 +832,54 @@ async def _article_dates(f: Fetcher, org: str, lv: PageView, site_dom: str, foun
         title = re.sub(r"\s+", " ", h1.text()).strip() if h1 else anchor
         if 8 <= len(title) <= 200 and not STUB_NEWS.search(title):
             out.append((title, when, av, raw, snap.final_url))
+    return out
+
+
+async def _sitemap_dates(f: Fetcher, org: str, lv: PageView, site_dom: str, founded: str | None) -> list:
+    """Dates for news-section articles from the site's sitemap <lastmod>, skipping bulk-regenerated days."""
+    base = lv.snap.final_url.rstrip("/")
+    titles: dict[str, str] = {}
+    for node in lv.tree.css("h1 a[href], h2 a[href], h3 a[href], h4 a[href], a[href] h2, a[href] h3"):
+        a = node if node.tag == "a" else node.parent
+        href = urljoin(lv.snap.final_url, (a.attributes.get("href") or "")).split("#")[0].rstrip("/")
+        text = re.sub(r"\s+", " ", node.text()).strip()
+        if href.startswith(base + "/") and 8 <= len(text) <= 200 and href not in titles:
+            titles[href] = text
+    if not titles:
+        return []
+    origin = "{0.scheme}://{0.netloc}".format(urlsplit(lv.snap.final_url))
+    snap = await f.get(origin + "/sitemap.xml", company=org)
+    if isinstance(snap, FetchError) or "<" not in snap.text[:200]:
+        return []
+    xml = snap.text
+    if "<sitemapindex" in xml[:2000]:
+        sub = re.findall(r"<loc>\s*([^<]+?)\s*</loc>", xml)
+        pick = next((u for u in sub if re.search(r"(post|blog|news|nyhet|aktuelt|page)", u, re.I)), sub[0] if sub else None)
+        if not pick or registered_domain(pick) != site_dom:
+            return []
+        snap = await f.get(unescape(pick), company=org)
+        if isinstance(snap, FetchError):
+            return []
+        xml = snap.text
+    entries = re.findall(r"<url>\s*<loc>\s*([^<]+?)\s*</loc>\s*<lastmod>\s*([^<]+?)\s*</lastmod>", xml)
+    if not entries:
+        return []
+    days: dict[str, int] = {}
+    for _u, d in entries:
+        days[d[:10]] = days.get(d[:10], 0) + 1
+    bulk = {d for d, n in days.items() if n >= max(5, len(entries) * 0.3)}
+    sv = PageView(snap, HTMLParser(""), xml)
+    out = []
+    for loc, lastmod in entries:
+        url = unescape(loc).rstrip("/")
+        if url not in titles or lastmod[:10] in bulk:
+            continue
+        when = _date_ok(lastmod, founded)
+        raw = _raw_find(xml, re.escape(loc) + r"\s*</loc>\s*<lastmod>\s*" + re.escape(lastmod))
+        if when and raw:
+            out.append((titles[url], when[:10], sv, raw, url))
+        if len(out) >= 20:
+            break
     return out
 
 
