@@ -180,7 +180,7 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
         if "summary" not in p.context:
             p.context["summary"] = template(p)
         ops = {"requests": budget.by_company.get(org, 0), "runtime_ms": timing.get(org),
-               "third_party_cost_usd": 0, "llm_calls": 1 if str(p.context["summary"].get("writer", "")).startswith("model") else 0}
+               "third_party_cost_usd": 0, "llm_calls": 1 if "model" in str(p.context["summary"].get("writer", "")) else 0}
         status = "completed" if p.legal_name else "failed"
         envelopes.append(envelope(p, completed, ops, status))
     lat = sorted(timing.values())

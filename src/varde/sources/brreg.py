@@ -479,6 +479,15 @@ async def update_feed(fetcher: Fetcher, orgs: list[str], since: str) -> tuple[Sn
     return last, out
 
 
+LEAF_EN = {
+    "/antallAnsatte": "employees", "/navn": "name", "/hjemmeside": "website", "/epostadresse": "email",
+    "/telefon": "phone", "/mobil": "mobile", "/kapital/belop": "share capital", "/naeringskode1/kode": "industry code",
+    "/forretningsadresse/adresse": "business address", "/forretningsadresse/adresse/0": "business address",
+    "/postadresse/adresse": "postal address", "/postadresse/adresse/0": "postal address",
+    "/organisasjonsform/kode": "legal form", "/konkurs": "bankruptcy flag", "/underAvvikling": "winding-up flag",
+    "/sisteInnsendteAarsregnskap": "latest filed accounts year",
+}
+
 FIELD_EN = {
     "antallAnsatte": "employees", "navn": "name", "forretningsadresse": "business address", "postadresse": "postal address",
     "hjemmeside": "website", "epostadresse": "email", "telefon": "phone", "mobil": "mobile", "naeringskode1": "industry code",
@@ -507,8 +516,13 @@ def feed_events(p: Profile, items: list[dict]) -> None:
         for c in changes:
             path = c.get("path", "")
             v = c.get("value")
-            if c.get("op") in ("replace", "add") and isinstance(v, (str, int, float, bool)) and path.count("/") <= 3:
-                details.append({"field": FIELD_EN.get(path.strip("/").split("/")[0], path.strip("/")), "path": path, "new_value": v})
+            label = LEAF_EN.get(path)
+            if c.get("op") in ("replace", "add") and label and isinstance(v, list) and all(isinstance(x, str) for x in v):
+                details.append({"field": label, "path": path, "new_value": ", ".join(v)})
+            elif c.get("op") in ("replace", "add") and label and isinstance(v, (str, int, float, bool)):
+                details.append({"field": label, "path": path, "new_value": v})
+            elif c.get("op") in ("replace", "add") and path in ("/forretningsadresse", "/postadresse") and isinstance(v, dict):
+                details.append({"field": LEAF_EN[path + "/adresse"], "path": path, "new_value": ", ".join(v.get("adresse") or [])})
         value = {"date": upd.get("dato"), "type": upd.get("endringstype"), "changed_fields": paths[:20],
                  "changes": details[:8]}
         ev = p.add_evidence(snap, source_class=CLASS, span=span, method=m, licence=LICENCE)

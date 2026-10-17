@@ -41,6 +41,7 @@ PLATFORM_DOMAINS = {
     "wix.com", "wixsite.com", "squarespace.com", "wordpress.com", "blogspot.com", "google.com", "sites.google.com",
     "proff.no", "1881.no", "gulesider.no", "purehelp.no", "brreg.no", "finn.no", "mittanbud.no", "bedriftsdatabasen.no",
     "regnskapstall.no", "forvalt.no", "facebook.no", "jimdo.com", "webnode.com", "one.com", "domeneshop.no",
+    "e-susoft.com", "mystore.no", "myshopify.com", "shopify.com", "21xl.no", "webshop.no", "smartweb.no",
     "hugedomains.com", "sedo.com", "dan.com", "afternic.com", "godaddy.com", "parkingcrew.net", "bodis.com",
 }
 PARKED = re.compile(
@@ -71,6 +72,9 @@ ATS = re.compile(r"(teamtailor\.com|webcruiter\.(no|com)|jobbnorge\.no|recman\.(
                  r"greenhouse\.io|smartrecruiters\.com|recruitee\.com|talentech\.com|jobbsafari\.no)", re.I)
 CAREERS_PATH = re.compile(r"/(karriere|career|careers|jobb|jobs|ledige[-_]stillinger|stillinger|jobbe-hos-oss|"
                           r"jobb-hos-oss|vacancies|rekruttering)(/|$|\.)", re.I)
+NO_JOBS = re.compile(r"(ingen ledige|for tida ingen|for tiden ingen|ingen stillinger|ingen utlyste|no open positions|"
+                     r"no vacancies|no current openings|ingen aktive stillinger)", re.I)
+TEMPLATE_TEXT = re.compile(r"(lorem ipsum|abstrakt \d+|california|dolor sit amet|your company name|company name here)", re.I)
 JOB_WORDS = re.compile(r"(karriere|stilling|jobb|career|job|vacanc|ansett|rekrutt|søk|apply|work with us|join our team)", re.I)
 CAREERS_TEXT = re.compile(r"^(karriere|ledige stillinger|stillinger|jobb hos oss|jobbe hos oss|careers?|jobs|"
                           r"jobb|vi ansetter|bli en av oss|work with us|join us|ledig stilling)$", re.I)
@@ -425,6 +429,8 @@ def handle_matches(handle: str, legal: str, site_dom: str, people: list[str] | N
     if last.startswith("profile.php?id=") or re.fullmatch(r"\d{8,}", last) or \
             (handle.startswith("youtube.com/channel/") and re.fullmatch(r"uc[\w-]{20,}", last.lower())):
         return True  # opaque platform ids carry no name to compare
+    if re.search(r"\.(dk|se|fi|de|uk|nl|pl|ee|lt|lv|is)$", last.lower()) or re.search(r"(danmark|sverige|sweden|denmark|finland)", last.lower()):
+        return False  # a foreign sister's account
     base = ascii_slug(last)
     for person in people or []:
         parts = [ascii_slug(w) for w in person.split() if len(ascii_slug(w)) >= 3]
@@ -576,7 +582,8 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
             dom = registered_domain(absolute) or ""
             if ATS.search(absolute) and not re.search(r"(-demo\.|demo-|//demo\.|sandbox|staging)", absolute, re.I):
                 key, kind = absolute.split("#")[0], "applicant_tracking_board"
-            elif dom == site_dom and ((CAREERS_PATH.search(urlsplit(absolute).path) and (not text or JOB_WORDS.search(text)
+            elif dom == site_dom and not re.search(CAREERS_PATH.pattern + r"[^/]+/[^/]+", urlsplit(absolute).path + "/", re.I) \
+                    and ((CAREERS_PATH.search(urlsplit(absolute).path) and (not text or JOB_WORDS.search(text)
                                                                                           or len(text) < 3))
                                       or CAREERS_TEXT.match(text or "")):
                 key, kind = absolute.split("#")[0].rstrip("/"), "careers_page"
@@ -589,6 +596,14 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
         page = hiring_page[url]
         if raw not in page.snap.text:
             continue
+        if kind == "careers_page":
+            csnap = await f.get(url, company=org)
+            if isinstance(csnap, FetchError):
+                continue
+            ctext = view(csnap).text
+            if (not JOB_WORDS.search(ctext) or NO_JOBS.search(ctext) or TEMPLATE_TEXT.search(ctext)
+                    or len(ctext) < 200):
+                continue
         span = text_span(page.snap.text, raw, context=30) or raw
         p.add_claim("hiring_signal", "activity", url, [ev(page, span)],
                     label="Careers page on the verified website" if kind == "careers_page" else "Job board linked from the verified website",
@@ -745,9 +760,11 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
         if "|" in title_txt and fold(title_txt.split("|")[-1]) in (site_label, fold(p.legal_name or "")):
             return False  # a page title such as "Hjem | Company"
         words = t.split()
+        if re.match(r"^(gå til|les mer|se mer|read more|learn more|klikk her|click here|se alle|vis alle)\b", t):
+            return False
         path = urlsplit(href or "").path.strip("/")
         slugwords = re.split(r"[-_]", path.split("/")[-1]) if path else []
-        if len(words) <= 2 and not re.search(r"/\d{4}/", "/" + path + "/") and len(slugwords) < 3:
+        if len(words) <= 2 and not re.search(r"/\d{4}/", "/" + path + "/"):
             return False  # a category or section name, not an article
         return True
     news = [n for n in news if newsy(n[0], n[4])]
@@ -1099,8 +1116,11 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
                     extra={"exclusive": False, "url": normalise_url(reg)})
     if rejected and all(r.endswith(": blocked_robots") for r in rejected):
         state = "blocked"
-    elif any("name visible" in r or "other organisation" in r for r in rejected):
+    elif any("name visible but" in r or "other organisation" in r or "another organisation" in r
+             or "another company" in r for r in rejected):
         state = "ambiguous"
+    elif any(any(r.endswith(": " + t) for t in transient) for r in rejected):
+        state = "failed"
     else:
         state = "not_available"
     p.mark_field("official_website", "web_presence", state,

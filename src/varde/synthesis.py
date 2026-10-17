@@ -237,13 +237,16 @@ def template(p: Profile) -> dict:
             for ch in u["value"].get("changes") or []:
                 if ch["field"] in ("employee count registration date", "employee count date (NAV Aa-register)"):
                     continue
-                if ch["field"] in ("employees", "website", "name", "latest filed accounts year", "email", "phone",
+                if ch["field"] in ("employees", "website", "name", "email", "phone",
                                    "industry code", "share capital", "bankruptcy flag", "winding-up flag", "legal form") \
                         or "address" in ch["field"]:
                     if ch["field"] in seen_fields:
                         break
                     seen_fields.add(ch["field"])
-                    bits.append(f"{ch['field']} set to {ch['new_value']} on {u['as_of']}")
+                    nv = ch["new_value"]
+                    if isinstance(nv, float) or (isinstance(nv, int) and not isinstance(nv, bool) and abs(nv) >= 1000):
+                        nv = _fmt_amount(str(nv))
+                    bits.append(f"{ch['field']} set to {nv} on {u['as_of']}")
                     cites.append(u)
                     break
             if len(bits) >= 3:
