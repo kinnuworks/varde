@@ -298,6 +298,12 @@ table.t{width:100%;border-collapse:collapse}
 .cmp th[scope=row],.cmp thead td{position:sticky;left:0;z-index:1;background:#fff;box-shadow:1px 0 0 var(--line2)}
 .cmp thead td{background:var(--surf2)}
 .cmp .cell{justify-content:flex-start}
+.mcards{display:none}
+.mcard{padding:14px 16px;margin-top:8px}.mcard dl{margin:0}
+.mrow{padding:8px 0;border-top:1px solid var(--line2)}.mrow:first-child{border-top:0;padding-top:0}
+.mrow dt{font-size:11.5px;color:var(--ink3);margin-bottom:2px;overflow-wrap:anywhere}.mrow dd{margin:0;overflow-wrap:anywhere}
+.cite2.none{background:var(--surf2);color:var(--ink3)}
+.unk .eyebrow{margin-bottom:4px}.unk ul{list-style:none;padding:0}.unk li{padding:3px 0;color:var(--ink2)}
 .chl{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--ink2)}
 .chl li{padding:1px 0}
 .picker{position:relative;max-width:420px}
@@ -369,6 +375,7 @@ table.t{width:100%;border-collapse:collapse}
  .kv{grid-template-columns:1fr}.kv dt{margin-top:6px}
  .tray{bottom:calc(68px + env(safe-area-inset-bottom));left:12px;right:12px;transform:none;justify-content:space-between}
  .tray .pill{display:none}
+ .cmp-desk{display:none}.mcards{display:block}
  .toast{top:64px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
@@ -594,7 +601,7 @@ function viewDir(){const res=h('div'),cnt=h('p',{class:'count','aria-live':'poli
   tiles,h('div',{class:'tools'},q,sort),chips)),h('section',{class:'wrap pad',style:'padding-top:0'},cnt,res)]}
 
 /* profile */
-function srcChip(c,ids){ids=(ids||[]).filter(id=>c.cl[id]);if(!ids.length)return null;
+function srcChip(c,ids){ids=(ids||[]).filter(id=>c.cl[id]);if(!ids.length)return h('span',{class:'cite2 none',title:'No source recorded for this sentence'},IC.doc(),'0',h('span',{class:'sr'},'No source recorded for this sentence'));
  return h('button',{type:'button',class:'cite2','aria-label':ids.length+' source'+(ids.length===1?'':'s')+' for this sentence',onclick:ev=>openDrawer(c,ids,null,ev.currentTarget)},IC.doc(),String(ids.length))}
 function missing(c,fields){const x=fields.flatMap(f=>c.by[f]||[]).find(y=>y.availability!=='available');
  return x?[h('div',{class:'kv1 st'},x.availability==='ambiguous'?'Ambiguous':SL[x.availability]||'Not found'),x.reason?h('div',{class:'ks'},x.reason):null]:h('div',{class:'kv1 st'},'Not found')}
@@ -623,7 +630,7 @@ function viewProfile(id,tab){const c=BY[id];if(!c)return [h('section',{class:'wr
  store('varde-last',id);const e=c.e,sm=e.summary||{},ss=sm.sentences||[];
  const sum=h('div',{class:'card box'},h('span',{class:'eyebrow'},'Summary'),h('h2',null,'What the sources say'),h('p',{class:'cap'},'Written from the facts below. Each sentence links to its sources.'),
   ss.length?h('p',{class:'sum'},ss.map((s,i)=>{const t=String(s.text||''),k=t.lastIndexOf(' ');return [i?' ':'',k>0?t.slice(0,k+1):'',h('span',{class:'nowrap'},k>0?t.slice(k+1):t,srcChip(c,s.claim_ids))]})):h('p',{class:'sum st'},sm.text||'No summary was produced for this company.'),
-  (sm.unknowns||[]).length?h('div',{class:'unk'},h('strong',null,'Unknown'),h('ul',null,sm.unknowns.map(u=>h('li',null,u)))):null);
+  (sm.unknowns||[]).length?h('div',{class:'unk'},h('h3',{class:'eyebrow'},'What we could not confirm'),h('ul',null,sm.unknowns.map(u=>h('li',null,u)))):null);
  const tl=h('div',{class:'tabs',role:'tablist','aria-label':'Profile sections'}),panel=h('div',{role:'tabpanel',id:'panel',tabindex:'0'});
  function show(t,focus){tl.querySelectorAll('button').forEach(b=>{const on=b.dataset.t===t;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;if(on&&focus)b.focus()});
   panel.setAttribute('aria-labelledby','tab-'+t);rc(panel);add(panel,[PANELS[t](c)]);try{history.replaceState(null,'','#/companies/'+id+(t==='overview'?'':'?tab='+t))}catch(x){}}
@@ -697,13 +704,15 @@ function viewCompare(q){let ids=String(q.ids||'').split(',').map(s=>s.trim()).fi
  if(!ids.length)return [head,h('section',{class:'wrap pad'},h('div',{class:'card empty'},'No companies selected. Search above, or use the Compare button on a company.'))];
  const cs=ids.map(id=>BY[id]);const last=c=>{const ch=(c.e.changes||[]).slice().sort((a,b)=>String(b.detected_at).localeCompare(String(a.detected_at)))[0];return ch?h('span',null,ch.explanation||ch.type,h('span',{class:'reason num'},dt(ch.detected_at))):h('span',{class:'st'},'No changes')};
  const R2=[['Legal form',c=>cellFor(c,'legal_form')],['Municipality',c=>c.muni||h('span',{class:'st'},'Not found')],['Industry',c=>cellFor(c,'industry')],['Employees',c=>cellFor(c,'registered_employees')],['Founded',c=>cellFor(c,'founded')],
-  ['Revenue',c=>finCell(c,'revenue')],['Annual result',c=>finCell(c,'annual_result')],['Equity',c=>finCell(c,'equity')],['Website',c=>cellFor(c,'official_website')],
-  ['Roles',c=>cnt(c,'role')],['Workplaces',c=>cnt(c,'workplace')],['Job ads',c=>cnt(c,'job_ad')],['News items',c=>cnt(c,'dated_news')],['Latest change',last]];
+  ['Operating income',c=>finCell(c,'revenue')],['Annual result',c=>finCell(c,'annual_result')],['Equity',c=>finCell(c,'equity')],['Website',c=>cellFor(c,'official_website')],
+  ['Roles',c=>cnt(c,'role')],['Workplaces',c=>cnt(c,'workplace')],['Open positions',c=>cnt(c,'job_ad')],['News',c=>cnt(c,'dated_news')],['Latest change',last]];
  const heads=[''].concat(cs.map(c=>c.name));
  const t=h('div',{class:'cmp-wrap',tabindex:'0',role:'region','aria-label':'Comparison table, scrolls sideways'},h('table',{class:'t cmp',style:'min-width:'+(120+cs.length*170)+'px'},h('thead',null,h('tr',null,h('td'),cs.map(c=>h('th',{scope:'col'},h('a',{href:'#/companies/'+c.id},c.name),h('div',{class:'muted num',style:'font-weight:400'},org(c.id)),
   h('button',{type:'button',class:'copy',style:'margin:6px 0 0','aria-label':'Remove '+c.name+' from compare',onclick:()=>go(ids.filter(x=>x!==c.id))},'Remove'))))),
   h('tbody',null,R2.map(([l,fn])=>h('tr',null,h('th',{scope:'row'},l),cs.map(c=>h('td',{'data-label':c.name},fn(c))))))));
- return [head,h('section',{class:'wrap pad'},h('div',{class:'card box'},t))]}
+ const mob=h('div',{class:'mcards'},R2.map(([l,fn])=>h('section',{class:'card mcard','aria-label':l},h('h3',{class:'eyebrow'},l),h('dl',null,cs.map(c=>h('div',{class:'mrow'},h('dt',null,c.name),h('dd',null,fn(c))))))),
+  h('div',{class:'row',style:'margin-top:8px'},cs.map(c=>h('button',{type:'button',class:'btn','aria-label':'Remove '+c.name+' from compare',onclick:()=>go(ids.filter(x=>x!==c.id))},'Remove '+c.name))));
+ return [head,h('section',{class:'wrap pad'},h('div',{class:'card box cmp-desk'},t),mob)]}
 
 /* ask */
 const TOP=[['what',/\b(do|does|doing|business|activit|purpose|about|virksomhet|form[aå]l|bransje|industr|describe|make|sell)/],['fin',/revenue|financ|omsetning|turnover|profit|result|resultat|equity|egenkapital|account|regnskap|earn|money|income/],
@@ -756,9 +765,9 @@ function viewRefresh(){const m=META;const withCh=CO.filter(c=>(c.e.changes||[]).
 /* router */
 let R={name:'dir'};
 function parse(){const raw=decodeURIComponent((location.hash||'#/').slice(1))||'/';const [p,qs]=raw.split('?');const q={};(qs||'').split('&').forEach(kv=>{if(!kv)return;const i=kv.indexOf('=');q[i<0?kv:kv.slice(0,i)]=i<0?'':kv.slice(i+1)});
- const seg=p.split('/').filter(Boolean);if(seg[0]==='companies'&&seg[1])return {name:'profile',id:seg[1],q};if(seg[0]==='compare')return {name:'compare',q};if(seg[0]==='research')return {name:'research',q};if(seg[0]==='refresh')return {name:'refresh',q};return {name:'dir',q}}
+ const seg=p.split('/').filter(Boolean);if(seg[0]==='companies'&&seg[1])return {name:'profile',id:seg[1],q};if(seg[0]==='compare')return {name:'compare',q};if(seg[0]==='research'||seg[0]==='ask')return {name:'research',q};if(seg[0]==='refresh'||seg[0]==='changes')return {name:'refresh',q};if(seg[0]==='company'&&seg[1])return {name:'profile',id:seg[1],q};if(!seg.length)return {name:'dir',q};return {name:'404',q}}
 function render(){closeDrawer();R=parse();const main=$('#main');let v;
- if(R.name==='profile')v=viewProfile(R.id,R.q.tab);else if(R.name==='compare')v=viewCompare(R.q);else if(R.name==='research')v=viewAsk(R.q);else if(R.name==='refresh')v=viewRefresh();else v=viewDir();
+ if(R.name==='profile')v=viewProfile(R.id,R.q.tab);else if(R.name==='compare')v=viewCompare(R.q);else if(R.name==='research')v=viewAsk(R.q);else if(R.name==='refresh')v=viewRefresh();else if(R.name==='404')v=[h('section',{class:'wrap pad'},h('div',{class:'card box',style:'max-width:520px;margin:40px auto 0'},h('span',{class:'eyebrow'},'Not found'),h('h1',{style:'font-size:22px'},'Page not found'),h('p',{class:'muted',style:'margin-top:8px'},'This address does not match a page in the report.'),h('div',{class:'row',style:'margin-top:16px'},[['#/','Companies'],['#/compare','Compare'],['#/ask','Ask'],['#/refresh','Changes']].map(([u,t],i)=>h('a',{class:i?'btn':'btn pri',href:u},t)))))];else v=viewDir();
  rc(main,...v);const nv={dir:'dir',profile:'dir',compare:'compare',research:'research',refresh:'refresh'}[R.name];
  document.querySelectorAll('[data-nav]').forEach(a=>{if(a.dataset.nav===nv)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
  document.querySelector('[data-nav=compare]').setAttribute('href','#/compare'+(CMP.length?'?ids='+CMP.join(','):''));
