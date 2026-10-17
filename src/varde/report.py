@@ -22,10 +22,27 @@ def write_report(envelopes: list[dict], path: pathlib.Path, run_meta: dict) -> N
     path = pathlib.Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     run_id = str((run_meta or {}).get("run_id") or "")
-    data = _embed({"meta": run_meta or {}, "envelopes": envelopes or []})
+    data = _embed({"meta": run_meta or {}, "envelopes": [_pack(e) for e in envelopes or []]})
     doc = (_TEMPLATE.replace("__TITLE__", html.escape(f"Varde report · run {run_id}" if run_id else "Varde report"))
            .replace("__CSS__", _CSS).replace("__JS__", _JS).replace("__DATA__", data))
     path.write_text(doc, encoding="utf-8")
+
+
+_SNAP_KEYS = ("source_url", "retrieved_at", "content_sha256", "snapshot_path", "source_class", "licence")
+
+
+def _pack(env: dict) -> dict:
+    """Store each snapshot's shared fields once; the page expands them on load."""
+    snaps: list[list] = []
+    index: dict[tuple, int] = {}
+    packed = []
+    for ev in env.get("evidence") or []:
+        key = tuple(ev.get(k) for k in _SNAP_KEYS)
+        if key not in index:
+            index[key] = len(snaps)
+            snaps.append(list(key))
+        packed.append({**{k: v for k, v in ev.items() if k not in _SNAP_KEYS}, "_s": index[key]})
+    return {**env, "evidence": packed, "_snaps": snaps}
 
 
 _TEMPLATE = """<!doctype html>
@@ -283,6 +300,8 @@ table.t{width:100%;border-collapse:collapse}
 _JS = r"""
 'use strict';
 const RAW=JSON.parse(document.getElementById('varde-data').textContent);
+(function(){const K=["source_url","retrieved_at","content_sha256","snapshot_path","source_class","licence"];
+for(const e of RAW.envelopes||[]){const S=e._snaps||[];for(const ev of e.evidence||[]){const row=S[ev._s];if(row){K.forEach((k,i)=>{if(row[i]!=null)ev[k]=row[i]})}delete ev._s}delete e._snaps}})();
 const META=RAW.meta||{};
 const SL={available:'Available',not_available:'Not available',blocked:'Blocked by source',not_applicable:'Not applicable',ambiguous:'Ambiguous: could not prove it is this company',failed:'Failed'};
 const FIN_L={revenue:'Revenue',operating_result:'Operating result',profit_before_tax:'Profit before tax',annual_result:'Annual result',salary_costs:'Salary costs',total_assets:'Total assets',equity:'Equity',total_debt:'Total debt',cash:'Cash'};
