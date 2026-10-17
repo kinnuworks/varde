@@ -9,3 +9,5 @@ build/
 dist/
 *.egg-info/
 .pytest_cache/
+.cache_nav.log
+*.log
