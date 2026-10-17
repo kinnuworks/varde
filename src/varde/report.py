@@ -239,6 +239,14 @@ table.t{width:100%;border-collapse:collapse}
 .cmp th[scope=row]{color:var(--ink3);font-weight:500;font-size:13px;width:170px}
 .cmp thead th{font-size:14px;color:var(--ink);font-weight:600;letter-spacing:-.015em}
 .cmp{table-layout:fixed}.cmp td{overflow-wrap:anywhere}
+.cmp-wrap{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
+.cmp thead td{width:170px}
+.cmp th[scope=row],.cmp thead td{position:sticky;left:0;z-index:1;background:#fff;box-shadow:1px 0 0 var(--line2)}
+.cmp thead td{background:var(--band)}
+.chl{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--ink2)}
+.tl .chl li,.chl li{display:list-item;padding:1px 0;border:0}
+.fact.cont{border-top-color:transparent;padding-top:2px}
+.cov{margin:10px 0 0;font-size:13px;color:var(--ink2);line-height:1.8}.cov b{color:var(--ink);font-weight:600}.nowrap{white-space:nowrap}
 .cmp .cell{justify-content:flex-start}
 .picker{position:relative;max-width:420px}
 .picker ul{list-style:none;margin:6px 0 0;padding:0}
@@ -281,8 +289,8 @@ table.t{width:100%;border-collapse:collapse}
  .t.stack-m tr>*:first-child{border-top:0}
  .t.stack-m td[data-label]::before{content:attr(data-label);display:block;font-size:11.5px;color:var(--ink3);margin-bottom:2px}
  .t.stack-m .cell{justify-content:flex-start}
- .cmp th[scope=row]{width:auto;font-weight:600;color:var(--ink)}
- .t.stack-m.cmp thead{display:block}.t.stack-m.cmp thead tr{display:flex;gap:8px;border:0;padding:0;margin-bottom:10px}.t.stack-m.cmp thead td{display:none}.t.stack-m.cmp thead th{flex:1 1 0;width:auto;min-width:0;border-radius:10px!important;padding:10px;overflow-wrap:anywhere}
+.cmp thead td,.cmp th[scope=row]{width:112px;min-width:112px;font-size:12.5px}
+ .cmp-wrap{margin:0 -6px}
  .tl li{grid-template-columns:minmax(0,1fr) auto;gap:4px 10px}
  .tl li .d{grid-column:1/-1}
  .drawer{top:auto;left:0;width:100%;max-height:86vh;border-radius:16px 16px 0 0;box-shadow:0 -16px 48px rgba(0,0,0,.16)}
@@ -304,13 +312,22 @@ const RAW=JSON.parse(document.getElementById('varde-data').textContent);
 for(const e of RAW.envelopes||[]){const S=e._snaps||[];for(const ev of e.evidence||[]){const row=S[ev._s];if(row){K.forEach((k,i)=>{if(row[i]!=null)ev[k]=row[i]})}delete ev._s}delete e._snaps}})();
 const META=RAW.meta||{};
 const SL={available:'Available',not_available:'Not available',blocked:'Blocked by source',not_applicable:'Not applicable',ambiguous:'Ambiguous: could not prove it is this company',failed:'Failed'};
-const FIN_L={revenue:'Revenue',operating_result:'Operating result',profit_before_tax:'Profit before tax',annual_result:'Annual result',salary_costs:'Salary costs',total_assets:'Total assets',equity:'Equity',total_debt:'Total debt',cash:'Cash'};
+const FIN_L={revenue:'Revenue',sales_revenue:'Sales revenue',operating_result:'Operating result',profit_before_tax:'Profit before tax',annual_result:'Annual result',salary_costs:'Salary costs',total_assets:'Total assets',equity:'Equity',total_debt:'Total debt',cash:'Cash'};
 const FIN=Object.keys(FIN_L);
 const AREAS=[['identity','Identity'],['financials','Financials'],['leadership','People & places'],['web_presence','Website & profiles'],['activity','Hiring & activity']];
 const CLS={official_registry:'Official registry',company_owned:'Company website',official_api:'Official API',open_knowledge_base:'Open knowledge base'};
 const TLL={job_ad:'Job ad',dated_news:'News',public_record:'Public record',registry_update:'Registry update',hiring_signal:'Careers page'};
-const PEOPLE=['role','roles','workplace'],WEB=['official_website','social_profile','website_description'],ACT=['hiring_signal','job_ad','dated_news','public_record','registry_update'];
-const MONO=new Set(['organisation_number','founded','registered_employees','share_capital','lei'].concat(FIN));
+const PEOPLE=['role','roles','workplace'],WEB=['official_website','website_title','website_description','social_profile','related_website'],ACT=['hiring_signal','job_ad','dated_news','public_record','registry_update'];
+const MM={orgnr_on_page:'Organisation number printed on the site',registry_phone_and_name:'Phone number from the register and the company name appear on the site',registry_email_and_name:'Email address from the register and the company name appear on the site',registry_website_and_name:'Website declared in the register and the company name appears on it',name_and_registered_address:'Company name and registered address appear on the site',linked_from_verified_site:'Linked from the verified company website',orgnr_in_request:'Looked up by organisation number in the official register',employer_orgnr_in_ad:'Employer organisation number in the job ad',registeredAs_equals_orgnr:'The record is registered under this organisation number',P2333_equals_orgnr:'Wikidata lists this organisation number for the item',winner_identifier_equals_orgnr:'The winning supplier is identified by this organisation number',buyer_identifier_equals_orgnr:'The buyer is identified by this organisation number',company_board_linked_from_verified_site:'Board page linked from the verified company website',wikidata_item_with_matching_website:'Wikidata item lists the same verified website',verified_site:'Found on the verified company website',declared_in_register:'Declared in the official register',parent_orgnr_in_request:'Looked up by the parent organisation number in the official register',orgnr_in_feed_record:'Organisation number in the source record'};
+function hum(k){return String(k||'').replace(/_/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2').toLowerCase().replace(/^./,x=>x.toUpperCase())}
+function mm(m){return MM[m]||hum(m)}
+function acct(t){return {SELSKAP:'company accounts',KONSERN:'group accounts'}[t]||(t?String(t).toLowerCase()+' accounts':'')}
+const REL={parent:'parent company',subsidiary:'subsidiary',sibling:'sister company',owner:'owner',owned:'owned company'};
+const LBL={related_website:'Website declared in the register, run by another organisation',register_registrertIForetaksregisteret:'In the Register of Business Enterprises',register_registrertIMvaregisteret:'Registered for VAT',register_registrertIFrivillighetsregisteret:'In the Register of Non-Profit Organisations',register_registrertIStiftelsesregisteret:'In the Register of Foundations',status_konkurs:'Bankrupt',status_underAvvikling:'Being wound up',status_underTvangsavviklingEllerTvangsopplosning:'Under compulsory dissolution',in_group:'Part of a group',isin:'ISIN',lei:'Legal Entity Identifier',wikidata_item:'Wikidata item',accounts_audited:'Accounts audited',accounts_audit_opted_out:'Audit opted out'};
+function lab(x){return x.field==='related_website'?LBL.related_website:(x.label||LBL[x.field]||hum(x.field))}
+const d10=s=>String(s||'').slice(0,10);
+function amtOf(f,a){if(typeof a==='string'&&a.trim()[0]==='{'){try{const o=JSON.parse(a);const k={operating_result:'driftsresultat',revenue:'sumDriftsinntekter'}[f];if(k&&o[k]!=null)return String(o[k]);for(const n in o)if(typeof o[n]==='number')return String(o[n])}catch(e){}}return a}
+const MONO=new Set(['organisation_number','founded','registered_employees','share_capital','lei','isin','registered_date','registry_phone'].concat(FIN));
 const TABS=[['overview','Overview'],['financials','Financials'],['people','Leadership & workplaces'],['web','Website & profiles'],['activity','Hiring & activity'],['changes','Changes'],['sources','Sources']];
 
 /* dom helpers */
@@ -337,13 +354,16 @@ function dt(s){s=String(s||'');const m=s.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\
 function per(p){p=String(p||'');const m=p.match(/^(\d{4}-\d{2}-\d{2})\/(\d{4}-\d{2}-\d{2})$/);if(!m)return p;
  return m[1].slice(5)==='01-01'&&m[2].slice(5)==='12-31'&&m[1].slice(0,4)===m[2].slice(0,4)?m[1].slice(0,4):m[1]+' to '+m[2]}
 function title(s){return String(s||'').toLowerCase().replace(/(^|[\s-])(\p{L})/gu,(a,b,c)=>b+c.toUpperCase())}
-function flat(v){if(v==null)return '';if(Array.isArray(v))return v.map(flat).filter(Boolean).join(', ');
- if(isO(v))return Object.keys(v).filter(k=>!/^(url|raw|role_code|rank)$/.test(k)).map(k=>flat(v[k])).filter(Boolean).join(', ');
+function flat(v){if(v==null)return '';if(Array.isArray(v))return v.map(flat).filter(Boolean).join(v.some(isO)?' | ':', ');
+ if(isO(v))return Object.keys(v).filter(k=>v[k]!=null&&v[k]!==''&&!/^(url|raw|role_code|rank|path)$/.test(k)).map(k=>hum(k)+': '+flat(v[k])).join('; ');
  if(typeof v==='boolean')return v?'Yes':'No';return String(v)}
 function addr(v){if(!isO(v))return flat(v);const a=v.address||v.adresse;const L=[];if(a)L.push(Array.isArray(a)?a.join(', '):String(a));
  const t=[v.postcode||v.postnummer,v.city||v.poststed].filter(Boolean).join(' ');if(t)L.push(t);return L.length?L.join(', '):flat(v)}
 function fv(c){const v=c.value,f=c.field;if(v==null)return '';
- if(FIN.includes(f)||f==='share_capital')return isO(v)?amt(v.amount,v.currency):flat(v);
+ if(FIN.includes(f))return isO(v)?amt(amtOf(f,v.amount),v.currency):flat(v);
+ if(f==='share_capital'){if(!isO(v))return flat(v);const ex=[v.type,v.shares!=null&&amt(v.shares)+' shares',v.since&&'since '+d10(v.since)].filter(Boolean);return amt(v.amount,v.currency)+(ex.length?' ('+ex.join(', ')+')':'')}
+ if(f==='accounts_audited'||f==='accounts_audit_opted_out')return isO(v)?(v.value?'Yes':'No')+(v.period?' ('+per(v.period)+(v.account_type?', '+acct(v.account_type):'')+')':''):flat(v);
+ if(f==='former_names')return (Array.isArray(v)?v:[v]).map(n=>isO(n)?(n.name||'')+(n.from||n.to?' ('+[n.from&&'from '+d10(n.from),n.to&&'to '+d10(n.to)].filter(Boolean).join(' ')+')':''):String(n)).join('; ');
  switch(f){case 'organisation_number':return org(v);
   case 'legal_form':case 'institutional_sector':return isO(v)?[v.description,v.code&&'('+v.code+')'].filter(Boolean).join(' '):flat(v);
   case 'industry':return isO(v)?[v.code,v.description].filter(Boolean).join(' '):flat(v);
@@ -353,9 +373,14 @@ function fv(c){const v=c.value,f=c.field;if(v==null)return '';
   case 'job_ad':return isO(v)?v.title||flat(v):flat(v);
   case 'dated_news':return c.title||(isO(v)?v.title:String(v).replace(/\s*\(\d{4}-\d{2}-\d{2}[^)]*\)\s*$/,''));
   case 'public_record':return isO(v)?v.title||v.type||flat(v):flat(v);
-  case 'registry_update':return isO(v)?[v.type,v.changed_fields&&('fields: '+flat(v.changed_fields))].filter(Boolean).join(', '):flat(v);
-  case 'group_relation':return isO(v)?[v.name,v.organisation_number&&'('+org(v.organisation_number)+')',v.relation&&'· '+v.relation].filter(Boolean).join(' '):flat(v);
-  case 'lei':return isO(v)?v.lei||v.id||v.code||flat(v):flat(v)}
+  case 'registry_update':return isO(v)?(v.type||'Update')+(Array.isArray(v.changes)&&v.changes.length?': '+v.changes.map(x=>x.field||hum(x.path)).join(', '):v.changed_fields?': '+flat(v.changed_fields):''):flat(v);
+  case 'group_relation':return isO(v)?[v.name,v.organisation_number&&'('+org(v.organisation_number)+')'].filter(Boolean).join(' ')+[v.relation&&(REL[v.relation]||v.relation),v.ownership_basis,v.since&&'since '+d10(v.since)].filter(Boolean).map(x=>', '+x).join(''):flat(v);
+  case 'role_in_other_entity':return isO(v)?(v.role||'Role')+' in '+[v.name,v.organisation_number&&'('+org(v.organisation_number)+')'].filter(Boolean).join(' ')+(v.share!=null?', share '+v.share:''):flat(v);
+  case 'lei':return isO(v)?(v.lei||v.id||'')+(v.status||v.next_renewal?' ('+[v.status&&String(v.status).toLowerCase(),v.next_renewal&&'renewal due '+d10(v.next_renewal)].filter(Boolean).join(', ')+')':''):flat(v);
+  case 'wikidata_item':return isO(v)?[v.label,v.qid&&'('+v.qid+')'].filter(Boolean).join(' '):flat(v);
+  case 'isin':return isO(v)?v.isin||v.code||flat(v):flat(v);
+  case 'related_website':return isO(v)?v.domain||v.website||v.url||flat(v):flat(v)}
+ if(/^(status_|register_|in_group)/.test(f)&&typeof v==='boolean')return v?'Yes':'No';
  if(f.startsWith('status_')&&typeof v==='boolean')return v?'Yes':'No';return flat(v)}
 function urlOf(c){const v=c.value;return c.url||(isO(v)&&v.url)||((c.field==='official_website'||c.field==='hiring_signal'||c.field==='social_profile')&&typeof v==='string'?v:'')}
 function dateOf(c){const v=c.value;let d=(isO(v)&&(v.published||v.date))||c.published||'';if(!d&&typeof v==='string'){const m=v.match(/\((\d{4}-\d{2}-\d{2})/);if(m)d=m[1]}return d||c.as_of||''}
@@ -382,23 +407,29 @@ for(const e of RAW.envelopes||[]){const c={e,id:String(e.organisation_number||''
  c.n=(e.claims||[]).filter(x=>x.availability==='available').length;
  const rv=latest(c,'revenue');c.rev=rv?parseFloat(rv.value.amount):null;
  c.badges=flags(c);
- c.f={web:av(c,'official_website').length>0,acc:FIN.some(f=>av(c,f).length),hire:av(c,'job_ad').length+av(c,'hiring_signal').length>0,news:av(c,'dated_news').length>0,chg:(e.changes||[]).length>0,bank:c.badges.length>0};
+ c.f={web:av(c,'official_website').length>0,acc:FIN.some(f=>av(c,f).length),hire:av(c,'job_ad').length>0,news:av(c,'dated_news').length>0,chg:(e.changes||[]).length>0,bank:c.badges.length>0};
  c.s=[c.name,c.id,c.muni,c.ind,c.indc].join(' ').toLowerCase();CO.push(c);BY[c.id]=c}
 
 /* shared bits */
 function state(x){const s=x.availability||'failed';return h('span',null,h('span',{class:'st '+s},SL[s]||s),x.reason?h('span',{class:'reason'},x.reason):null)}
 function srcBtn(c,ids,label){ids=(ids||[]).filter(id=>c.cl[id]&&(c.cl[id].evidence_ids||[]).length);if(!ids.length)return null;
  return h('button',{type:'button',class:'src','aria-label':'Show source for '+(label||'this value'),onclick:ev=>openDrawer(c,ids,null,ev.currentTarget)},'Source')}
-function val(c,x){if(x.availability!=='available')return state(x);const t=fv(x),u=urlOf(x),cls=MONO.has(x.field)?'num':null;
+function val(c,x){if(x.availability!=='available')return state(x);const v=x.value;
+ if(x.field==='registry_update'&&isO(v)&&Array.isArray(v.changes)&&v.changes.length)return h('span',null,v.type||'Update',h('ul',{class:'chl'},v.changes.map(ch=>h('li',null,(ch.field||hum(ch.path))+': ',h('span',{class:'ink'},ch.new_value==null||ch.new_value===''?'removed':flat(ch.new_value))))));
+ if(x.field==='former_names'&&Array.isArray(v)&&v.length>1)return h('ul',{class:'chl'},v.map(n=>h('li',null,fv({field:'former_names',value:[n]}))));
+ const t=fv(x),u=urlOf(x),cls=MONO.has(x.field)?'mono':null;
  return u&&safeUrl(u)?link(u,t||u):h('span',{class:cls},t)}
-function factRow(c,x){return h('div',{class:'fact'},h('dt',null,x.label||x.field),h('dd',null,val(c,x),x.availability==='available'&&FIN.includes(x.field)&&perOf(x)?h('span',{class:'reason'},'Period '+per(perOf(x))+(x.value.account_type?' · '+x.value.account_type:'')):null),h('div',null,srcBtn(c,[x.id],x.label)))}
-function facts(c,xs){return xs.length?h('dl',{class:'facts'},xs.map(x=>factRow(c,x))):null}
+function factRow(c,x,cont){return h('div',{class:'fact'+(cont?' cont':'')},h('dt',null,cont?h('span',{class:'sr'},lab(x)):lab(x)),h('dd',null,val(c,x),x.availability==='available'&&FIN.includes(x.field)&&perOf(x)?h('span',{class:'reason'},per(perOf(x))+(x.value.account_type?', '+acct(x.value.account_type):'')):null),h('div',null,srcBtn(c,[x.id],lab(x))))}
+function facts(c,xs){if(!xs.length)return null;const dl=h('dl',{class:'facts'});let i=0;
+ while(i<xs.length){let j=i;while(j<xs.length&&xs[j].field===xs[i].field)j++;const g=xs.slice(i,j).map((x,k)=>factRow(c,x,k>0));
+  if(g.length>6){g.slice(5).forEach(r=>r.hidden=true);const b=h('div',{class:'fact cont'},h('dt',{class:'sr'},'More'),h('dd',null,h('button',{type:'button',class:'btn',onclick:()=>{g.forEach(r=>r.hidden=false);b.remove()}},'Show all '+g.length)));add(dl,[g,b])}else add(dl,g);i=j}return dl}
 function areasEl(c){const on=AREAS.filter((a,i)=>c.areas[i]).map(a=>a[1]);
  return h('span',{class:'areas',role:'img','aria-label':'Areas found: '+(on.join(', ')||'none')},AREAS.map((a,i)=>h('i',{class:c.areas[i]?'on':null,title:a[1]+(c.areas[i]?': found':': not found')})),h('span',{class:'areas-l','aria-hidden':'true'},on.length+' of 5 areas'))}
 function badges(c){return c.badges.map(b=>h('span',{class:'badge alert'},b)).concat(c.e.state&&c.e.state!=='complete'?[h('span',{class:'badge'},'Run '+c.e.state)]:[])}
 function tbl(heads,rows,cls){return h('div',{class:'t-wrap'},h('table',{class:'t stack-m '+(cls||'')},h('thead',null,h('tr',null,heads.map(x=>h('th',{scope:'col'},x)))),
  h('tbody',null,rows.map(r=>h('tr',null,r.map((cell,i)=>i===0&&r.rowHead?h('th',{scope:'row'},cell):h('td',{'data-label':heads[i]||null},cell)))))))}
 
+function hireTxt(c){const j=av(c,'job_ad').length;return j?j+' open position'+(j===1?'':'s'):av(c,'hiring_signal').length?'Careers page only':'News or records found'}
 /* compare selection */
 let CMP=(store('varde-cmp')||[]).filter(id=>BY[id]).slice(0,3);
 function setCmp(ids){CMP=ids.filter((x,i)=>BY[x]&&ids.indexOf(x)===i).slice(0,3);store('varde-cmp',CMP);
@@ -423,15 +454,15 @@ function evBlock(c,v){const sha=String(v.content_sha256||''),snap=safeRel(v.snap
   v.note?[h('dt',null,'Note'),h('dd',null,v.note)]:null))}
 function openDrawer(c,ids,evIds,opener){drOpener=opener||document.activeElement;const b=$('#dr-b');rc(b);
  for(const id of ids||[]){const x=c.cl[id];if(!x)continue;
-  b.appendChild(h('section',{class:'dc'},h('div',{class:'muted'},x.label||x.field),h('div',{class:'v'+(MONO.has(x.field)?' num':'')},x.availability==='available'?(fv(x)||'(empty)'):state(x)),
+  b.appendChild(h('section',{class:'dc'},h('div',{class:'muted'},lab(x)),h('div',{class:'v'+(MONO.has(x.field)?' num':'')},x.availability==='available'?(fv(x)||'(empty)'):state(x)),
    h('dl',{class:'kv'},h('dt',null,'Company'),h('dd',null,c.name),
-    x.match?[h('dt',null,'Match method'),h('dd',null,h('span',{class:'mono'},x.match.method||''),x.match.detail?h('span',{class:'reason'},x.match.detail):null)]:null,
-    perOf(x)?[h('dt',null,'Period'),h('dd',{class:'num'},perOf(x)+(isO(x.value)&&x.value.account_type?' · '+x.value.account_type:''))]:null,
+    x.match?[h('dt',null,'Match method'),h('dd',null,mm(x.match.method),x.match.detail?h('span',{class:'reason'},x.match.detail):null)]:null,
+    perOf(x)?[h('dt',null,'Period'),h('dd',null,h('span',{class:'num'},perOf(x)),isO(x.value)&&x.value.account_type?', '+acct(x.value.account_type):'')]:null,
     x.as_of?[h('dt',null,'As of'),h('dd',{class:'num'},x.as_of)]:null,
     urlOf(x)?[h('dt',null,'Link'),h('dd',null,link(urlOf(x)))]:null),
    (x.evidence_ids||[]).map(e=>c.ev[e]?evBlock(c,c.ev[e]):h('p',{class:'st'},'Evidence '+e+' is missing from this record.'))))}
  for(const id of evIds||[]){const v=c.ev[id];if(!v)continue;const used=(c.e.claims||[]).filter(x=>(x.evidence_ids||[]).includes(id));
-  b.appendChild(h('section',{class:'dc'},h('div',{class:'muted'},'Evidence '+id),h('div',{class:'v'},used.length?'Supports: '+[...new Set(used.map(x=>x.label||x.field))].join(', '):'Not cited by any fact'),evBlock(c,v)))}
+  b.appendChild(h('section',{class:'dc'},h('div',{class:'muted'},'Evidence '+id),h('div',{class:'v'},used.length?'Supports: '+[...new Set(used.map(x=>lab(x)))].join(', '):'Not cited by any fact'),evBlock(c,v)))}
  $('#dr-t').textContent=(ids&&ids.length>1)?ids.length+' cited facts':'Source';
  $('#scrim').hidden=false;$('#drawer').hidden=false;$('#dr-x').focus()}
 function closeDrawer(){if($('#drawer').hidden)return;$('#drawer').hidden=true;$('#scrim').hidden=true;if(drOpener&&drOpener.focus)drOpener.focus()}
@@ -454,12 +485,14 @@ function match(q){q=q.trim().toLowerCase();if(!q)return CO;if(/^[\d\s]+$/.test(q
 
 /* directory */
 const DS={q:'',f:new Set(),sort:'data',shown:50};
-const FL=[['web','Has website'],['acc','Has accounts'],['hire','Hiring'],['news','Has news'],['chg','Changed since last run'],['bank','Bankrupt or winding up']];
+const FL=[['web','Has website'],['acc','Has accounts'],['hire','Open positions'],['news','Has news'],['chg','Changed since last run'],['bank','Bankrupt or winding up']];
 function dirList(){let xs=match(DS.q).filter(c=>[...DS.f].every(k=>c.f[k]));
  const s=DS.sort;xs=xs.slice().sort(s==='name'?(a,b)=>a.name.localeCompare(b.name,'nb'):s==='rev'?(a,b)=>(b.rev==null?-Infinity:b.rev)-(a.rev==null?-Infinity:a.rev)||a.name.localeCompare(b.name,'nb'):(a,b)=>b.n-a.n||a.name.localeCompare(b.name,'nb'));return xs}
 function card(c){return h('li',{class:'card co'},h('a',{class:'co-a',href:'#/companies/'+c.id},h('span',{class:'co-n'},c.name),
  h('span',{class:'co-m'},h('span',{class:'num'},org(c.id)),[c.form,c.muni,c.ind].filter(Boolean).map(x=>' · '+x)),c.badges.length?h('span',{class:'row',style:'margin-top:6px'},badges(c)):null),
  h('div',{class:'co-s'},areasEl(c),cmpBtn(c)))}
+function covEl(){const L=[['web','with a website'],['acc','with filed accounts'],['hire','with open positions'],['news','with dated news'],['chg','changed since the last run']];
+ return h('p',{class:'cov'},h('span',{class:'muted'},'Coverage: '),L.map(([k,t],i)=>[i?h('span',{class:'muted'},' · '):null,h('span',{class:'nowrap'},h('b',{class:'num'},String(CO.filter(c=>c.f[k]).length)),' '+t)]))}
 function viewDir(){const res=h('div'),cnt=h('p',{class:'count','aria-live':'polite'});
  function draw(){const xs=dirList();cnt.textContent=xs.length===CO.length?CO.length+' companies':xs.length+' of '+CO.length+' companies match';
   if(!xs.length){rc(res,h('div',{class:'card empty'},CO.length?'No companies match. Clear a filter or search for an organisation number.':'This run contains no companies.'));return}
@@ -469,18 +502,18 @@ function viewDir(){const res=h('div'),cnt=h('p',{class:'count','aria-live':'poli
  let tm;const q=h('input',{class:'field',type:'search',placeholder:'Search by name, organisation number, municipality or industry','aria-label':'Search companies',value:DS.q,oninput:e=>{clearTimeout(tm);tm=setTimeout(()=>{DS.q=e.target.value;DS.shown=50;draw()},90)}});
  const sort=h('select',{class:'field','aria-label':'Sort companies',onchange:e=>{DS.sort=e.target.value;DS.shown=50;draw()}},[['data','Most data found'],['name','Name A to Z'],['rev','Revenue, highest first']].map(([v,t])=>h('option',{value:v,selected:DS.sort===v},t)));
  const chips=h('div',{class:'chips',role:'group','aria-label':'Filters'},FL.map(([k,t])=>{const n=CO.filter(c=>c.f[k]).length;return h('button',{type:'button',class:'chip','aria-pressed':DS.f.has(k),onclick:e=>{DS.f.has(k)?DS.f.delete(k):DS.f.add(k);e.currentTarget.setAttribute('aria-pressed',DS.f.has(k));DS.shown=50;draw()}},t,h('span',{class:'ct'},n))}));
- draw();return [h('section',{class:'band'},h('div',{class:'wrap'},h('h1',null,'Companies'),h('p',{class:'lead'},CO.length+' Norwegian companies profiled from their organisation numbers. Open a company to see each fact with the source it came from.'),
+ draw();return [h('section',{class:'band'},h('div',{class:'wrap'},h('h1',null,'Companies'),covEl(),h('p',{class:'lead'},CO.length+' Norwegian companies profiled from their organisation numbers. Open a company to see each fact with the source it came from.'),
   h('div',{class:'tools'},q,sort),chips)),h('section',{class:'wrap pad'},cnt,res)]}
 
 /* profile */
 function cites(c,ids,n){return h('span',{class:'cites'},(ids||[]).filter(id=>c.cl[id]).map(id=>{const x=c.cl[id];const k=n.map[id]||(n.map[id]=++n.i);
- return h('sup',{class:'cite'},h('button',{type:'button','aria-label':'Source '+k+': '+(x.label||x.field),onclick:ev=>openDrawer(c,[id],null,ev.currentTarget)},String(k)))}))}
+ return h('sup',{class:'cite'},h('button',{type:'button','aria-label':'Source '+k+': '+(lab(x)),onclick:ev=>openDrawer(c,[id],null,ev.currentTarget)},String(k)))}))}
 function viewProfile(id,tab){const c=BY[id];if(!c)return [h('section',{class:'wrap pad'},h('div',{class:'card empty'},'No company with organisation number '+id+' is in this run. ',h('a',{href:'#/'},'Back to all companies')))];
  store('varde-last',id);const e=c.e,sm=e.summary||{},n={i:0,map:{}};
  const sum=h('div',{class:'card box sum'},h('h2',{style:'margin-bottom:10px'},'Summary'),(sm.sentences&&sm.sentences.length)?sm.sentences.map(s=>h('p',null,s.text,cites(c,s.claim_ids,n))):h('p',{class:'st'},sm.text||'No summary was produced for this company.'),
   (sm.unknowns||[]).length?h('div',{class:'unk'},h('strong',null,'Unknown'),h('ul',null,sm.unknowns.map(u=>h('li',null,u)))):null);
  const sec=e.sections||{};
- const side=h('div',{class:'card box'},h('h2',{style:'margin-bottom:10px'},'Areas found'),h('dl',{class:'facts'},AREAS.map(([k,t],i)=>{const s=(sec[k]||{}).state;return h('div',{class:'fact',style:'grid-template-columns:1fr auto'},h('dt',null,t),h('dd',null,c.areas[i]?'Found':h('span',{class:'st '+(s||'')},s==='ambiguous'?'Ambiguous':SL[s]||'Nothing found')))})),
+ const side=h('div',{class:'card box'},h('h2',{style:'margin-bottom:10px'},'Areas found'),h('dl',{class:'facts'},AREAS.map(([k,t],i)=>{const s=(sec[k]||{}).state;return h('div',{class:'fact',style:'grid-template-columns:1fr auto'},h('dt',null,t),h('dd',null,c.areas[i]?(k==='activity'?hireTxt(c):'Found'):k==='activity'&&av(c,'hiring_signal').length?'Careers page only':h('span',{class:'st '+(s||'')},s==='ambiguous'?'Ambiguous':SL[s]||'Nothing found')))})),
   h('p',{class:'muted',style:'margin-top:12px;font-size:12.5px'},c.n+' facts with sources. Run '+((e.run||{}).run_id||META.run_id||'')+'.'));
  const tl=h('div',{class:'tabs',role:'tablist','aria-label':'Profile sections'}),panel=h('div',{role:'tabpanel',id:'panel',tabindex:'0'});
  function show(t,focus){tl.querySelectorAll('button').forEach(b=>{const on=b.dataset.t===t;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;if(on&&focus)b.focus()});
@@ -496,21 +529,24 @@ function viewProfile(id,tab){const c=BY[id];if(!c)return [h('section',{class:'wr
   h('div',{class:'grid2'},sum,side))),h('section',{class:'wrap',style:'padding-bottom:48px'},tl,h('div',{class:'card box'},panel))]}
 function rest(c,fields){return fields.flatMap(f=>c.by[f]||[])}
 function nonAv(c,fields){return rest(c,fields).filter(x=>x.availability!=='available')}
-function known(){return new Set(['legal_name'].concat(FIN,PEOPLE,WEB,ACT))}
+const AUD=['accounts_audited','accounts_audit_opted_out'];
+const OV=['organisation_number','legal_form','industry','registered_address','postal_address','registered_employees','founded','registered_date','share_capital','registered_activity','statutory_purpose','former_names','registry_website','registry_email','registry_phone','institutional_sector','latest_filed_accounts_year','lei','isin','wikidata_item'];
+const GRP=['in_group','group_relation','role_in_other_entity'];
+function known(){return new Set(['legal_name','annual_accounts','financials'].concat(FIN,AUD,PEOPLE,WEB,ACT,OV,GRP))}
 const PANELS={
- overview(c){const K=known(),order=['organisation_number','legal_form','industry','registered_address','registered_employees','founded','share_capital','registered_activity','statutory_purpose','group_relation','lei'];
-  const xs=rest(c,['legal_name'].concat(order));const others=(c.e.claims||[]).filter(x=>!K.has(x.field)&&!order.includes(x.field));
-  return [h('h3',{class:'sub-h'},'Registered identity'),facts(c,xs)||h('p',{class:'st'},'No identity facts were found.'),others.length?[h('h3',{class:'sub-h'},'Other registry facts'),facts(c,others)]:null]},
+ overview(c){const K=known(),xs=rest(c,['legal_name'].concat(OV)),gr=rest(c,GRP);
+  const others=(c.e.claims||[]).filter(x=>!K.has(x.field)).sort((a,b)=>a.field.localeCompare(b.field));
+  return [h('h3',{class:'sub-h'},'Registered identity'),facts(c,xs)||h('p',{class:'st'},'No identity facts were found.'),gr.length?[h('h3',{class:'sub-h'},'Group and other roles'),facts(c,gr)]:null,others.length?[h('h3',{class:'sub-h'},'Status and other register facts'),facts(c,others)]:null]},
  financials(c){const xs=FIN.flatMap(f=>av(c,f)).filter(x=>isO(x.value));const cols=[];const seen={};
   for(const x of xs){const k=perOf(x)+'|'+(x.value.account_type||'');if(!seen[k]){seen[k]=1;cols.push({k,p:perOf(x),t:x.value.account_type||''})}}
   cols.sort((a,b)=>b.p.slice(-10).localeCompare(a.p.slice(-10))||(a.t==='SELSKAP'?-1:b.t==='SELSKAP'?1:a.t.localeCompare(b.t)));
   const na=nonAv(c,FIN.concat(['annual_accounts','financials']));
-  if(!cols.length)return [h('p',{class:'st'},'No filed annual accounts were found for this company.'),facts(c,na)];
-  const heads=['Figure'].concat(cols.map(o=>per(o.p)+(o.t?' · '+o.t:'')));
+  if(!cols.length)return [h('p',{class:'st'},'No filed annual accounts were found for this company.'),facts(c,rest(c,AUD)),facts(c,na)];
+  const heads=['Figure'].concat(cols.map(o=>per(o.p)+(o.t?', '+acct(o.t):'')));
   const rows=FIN.filter(f=>av(c,f).length).map(f=>{const r=[FIN_L[f]].concat(cols.map(o=>{const x=av(c,f).find(y=>isO(y.value)&&perOf(y)+'|'+(y.value.account_type||'')===o.k);
    return x?h('span',{class:'cell'},h('span',{class:'num'},fv(x)),srcBtn(c,[x.id],FIN_L[f]+' '+per(o.p))):h('span',{class:'st'},'Not in filing')}));r.rowHead=true;return r});
   const t=tbl(heads,rows,'fin');t.querySelectorAll('thead th').forEach((th,i)=>{if(i){th.className='r';th.title=cols[i-1].p}});t.querySelectorAll('tbody td').forEach(td=>td.className='r');
-  return [h('p',{class:'muted',style:'margin-bottom:12px'},'Amounts exactly as filed. Columns show the reporting period and account type (SELSKAP is the company alone, KONSERN is the group).'),t,na.length?[h('h3',{class:'sub-h'},'Missing figures'),facts(c,na)]:null]},
+  return [h('p',{class:'muted',style:'margin-bottom:12px'},'Amounts exactly as filed. Each column is one reporting period, from the company accounts or the group accounts.'),t,AUD.some(f=>c.by[f])?[h('h3',{class:'sub-h'},'Audit'),facts(c,rest(c,AUD))]:null,na.length?[h('h3',{class:'sub-h'},'Missing figures'),facts(c,na)]:null]},
  people(c){const roles=av(c,'role'),wps=av(c,'workplace');
   const rr=roles.map(x=>{const v=isO(x.value)?x.value:{};const r=[v.role||x.label||'Role',v.name||flat(v),v.kind==='entity'?'Organisation':v.kind==='person'?'Person':(v.kind||''),srcBtn(c,[x.id],(v.role||'Role')+' '+(v.name||''))];r.rowHead=true;return r});
   const wr=wps.map(x=>{const v=isO(x.value)?x.value:{};const r=[v.name||'Workplace',addr(v.address)||'Not recorded',v.municipality?title(v.municipality):'Not recorded',v.employees!=null?h('span',{class:'num'},String(v.employees)):h('span',{class:'st'},'Not registered'),srcBtn(c,[x.id],'workplace '+(v.name||''))];r.rowHead=true;return r});
@@ -534,7 +570,7 @@ function chgEl(x){const pv=x.previous&&'value' in x.previous?x.previous.value:x.
 function cellFor(c,f){const xs=c.by[f]||[];const x=xs.find(y=>y.availability==='available')||xs[0];if(!x)return h('span',{class:'st'},'Not found');
  return h('span',{class:'cell'},val(c,x),x.availability==='available'?srcBtn(c,[x.id],(x.label||f)+' for '+c.name):null)}
 function finCell(c,f){const x=latest(c,f);if(!x){const na=(c.by[f]||[])[0];return na?state(na):h('span',{class:'st'},'Not found')}
- return h('span',{class:'cell'},h('span',null,h('span',{class:'num'},fv(x)),h('span',{class:'reason'},per(perOf(x))+(x.value.account_type?' · '+x.value.account_type:''))),srcBtn(c,[x.id],FIN_L[f]+' for '+c.name))}
+ return h('span',{class:'cell'},h('span',null,h('span',{class:'num'},fv(x)),h('span',{class:'reason'},per(perOf(x))+(x.value.account_type?', '+acct(x.value.account_type):''))),srcBtn(c,[x.id],FIN_L[f]+' for '+c.name))}
 function cnt(c,f){return h('span',{class:'num'},String(av(c,f).length))}
 function picker(onPick,exclude){const ul=h('ul');const inp=h('input',{class:'field',type:'search',placeholder:'Search companies to add','aria-label':'Search companies to add',oninput:()=>{const v=inp.value.trim();
  rc(ul,v?match(v).filter(c=>!exclude.includes(c.id)).slice(0,6).map(c=>h('li',null,h('button',{type:'button',onclick:()=>onPick(c.id)},c.name,h('span',{class:'muted num'},' '+org(c.id))))):[])}});return h('div',{class:'picker'},inp,ul)}
@@ -547,7 +583,7 @@ function viewCompare(q){let ids=String(q.ids||'').split(',').map(s=>s.trim()).fi
   ['Revenue',c=>finCell(c,'revenue')],['Annual result',c=>finCell(c,'annual_result')],['Equity',c=>finCell(c,'equity')],['Website',c=>cellFor(c,'official_website')],
   ['Roles',c=>cnt(c,'role')],['Workplaces',c=>cnt(c,'workplace')],['Job ads',c=>cnt(c,'job_ad')],['News items',c=>cnt(c,'dated_news')],['Latest change',last]];
  const heads=[''].concat(cs.map(c=>c.name));
- const t=h('div',{class:'t-wrap'},h('table',{class:'t stack-m cmp'},h('thead',null,h('tr',null,h('td'),cs.map(c=>h('th',{scope:'col'},h('a',{href:'#/companies/'+c.id},c.name),h('div',{class:'muted num',style:'font-weight:400'},org(c.id)),
+ const t=h('div',{class:'cmp-wrap',tabindex:'0',role:'region','aria-label':'Comparison table, scrolls sideways'},h('table',{class:'t cmp',style:'min-width:'+(120+cs.length*170)+'px'},h('thead',null,h('tr',null,h('td'),cs.map(c=>h('th',{scope:'col'},h('a',{href:'#/companies/'+c.id},c.name),h('div',{class:'muted num',style:'font-weight:400'},org(c.id)),
   h('button',{type:'button',class:'copy',style:'margin:6px 0 0','aria-label':'Remove '+c.name+' from compare',onclick:()=>go(ids.filter(x=>x!==c.id))},'Remove'))))),
   h('tbody',null,R2.map(([l,fn])=>h('tr',null,h('th',{scope:'row'},l),cs.map(c=>h('td',{'data-label':c.name},fn(c))))))));
  return [head,h('section',{class:'wrap pad'},h('div',{class:'card box'},t))]}
@@ -563,7 +599,7 @@ function answer(c,q){q=q.toLowerCase();const tops=TOP.filter(([k,r])=>r.test(q))
  for(const k of tops){const S=[],A=f=>av(c,f);
   if(k==='what'){const a=A('registered_activity')[0]||A('statutory_purpose')[0],d=A('website_description')[0],i=A('industry').sort((x,y)=>((x.value||{}).rank||9)-((y.value||{}).rank||9))[0];
    if(d)S.push({t:'Its website describes the business as: "'+fv(d)+'"',ids:[d.id]});if(a)S.push({t:'Registered activity: "'+fv(a)+'"',ids:[a.id]});if(i)S.push({t:'Main industry code: '+fv(i)+'.',ids:[i.id]})}
-  if(k==='fin')for(const f of ['revenue','annual_result','equity']){const x=latest(c,f);if(x)S.push({t:FIN_L[f]+' was '+fv(x)+' for '+per(perOf(x))+(x.value.account_type?' ('+x.value.account_type+' accounts).':'.'),ids:[x.id]})}
+  if(k==='fin')for(const f of ['revenue','annual_result','equity']){const x=latest(c,f);if(x)S.push({t:FIN_L[f]+' was '+fv(x)+' for '+per(perOf(x))+(x.value.account_type?' ('+acct(x.value.account_type)+').':'.'),ids:[x.id]})}
   if(k==='lead'){const R=A('role'),g=re=>R.filter(x=>isO(x.value)&&re.test(String(x.value.role||x.label||'')));const ceo=g(/daglig|ceo|chief exec/i),ch=g(/styrets leder|chair|styreleder/i);
    if(ceo.length)S.push({t:'Daglig leder (CEO): '+ceo.map(x=>x.value.name).join(', ')+'.',ids:ceo.map(x=>x.id)});if(ch.length)S.push({t:'Chair of the board: '+ch.map(x=>x.value.name).join(', ')+'.',ids:ch.map(x=>x.id)});
    if(R.length)S.push({t:R.length+' role'+(R.length===1?' is':'s are')+' registered in total. See Leadership & workplaces for the full list.',ids:[]})}
@@ -576,7 +612,7 @@ function answer(c,q){q=q.toLowerCase();const tops=TOP.filter(([k,r])=>r.test(q))
   if(k==='chg'){const ch=c.e.changes||[];if(ch.length)S.push({t:ch.length+' change'+(ch.length===1?' was':'s were')+' detected since the previous run. Latest: '+String(ch[ch.length-1].explanation||ch[ch.length-1].type).replace(/\.$/,'')+'.',ids:[]});
    else S.push({t:'No changes were detected since the previous run, or this is the first run for this company.',ids:[]})}
   if(!S.length){const na=TF[k].flatMap(f=>(c.by[f]||[]).filter(x=>x.availability!=='available'))[0];
-   S.push(na?{t:'Unknown: '+(na.label||na.field)+'. '+(SL[na.availability]||na.availability)+(na.reason?', '+na.reason.replace(/\.$/,''):'')+'.',ids:[na.id]}:{t:'Unknown: no '+TN[k]+' facts were found for this company.',ids:[]})}
+   S.push(na?{t:'Unknown: '+(lab(na))+'. '+(SL[na.availability]||na.availability)+(na.reason?', '+na.reason.replace(/\.$/,''):'')+'.',ids:[na.id]}:{t:'Unknown: no '+TN[k]+' facts were found for this company.',ids:[]})}
   out.push(...S.slice(0,tops.length>1?2:3))}return out.slice(0,3)}
 const LOG=[];
 function viewAsk(q){let id=q.id&&BY[q.id]?q.id:(BY[store('varde-last')]?store('varde-last'):(CO[0]||{}).id);const list=h('div');

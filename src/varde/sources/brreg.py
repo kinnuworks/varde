@@ -307,10 +307,15 @@ async def accounts(p: Profile, f: Fetcher) -> None:
             value = _find_number(year, key)
             if value is None:
                 continue
-            span = json_span(t, key, start=start, end=end)
+            span = json_span(t, key, value, start=start, end=end)
             if not span:
                 continue
-            raw = span.split(":", 1)[1]
+            raw = span.split(":", 1)[1].strip()
+            try:
+                if float(raw) != float(value):
+                    continue
+            except ValueError:
+                continue
             claim = p.add_claim(
                 field_name, "financials",
                 {"amount": raw, "currency": currency, "account_type": kind, "period": period_str},
@@ -319,14 +324,14 @@ async def accounts(p: Profile, f: Fetcher) -> None:
                 extra={"journal_number": journal})
             if claim:
                 row["figures"][field_name] = raw
-        for flag, key in (("audited", "ikkeRevidertAarsregnskap"), ("audit_opted_out", "fravalgRevisjon")):
-            v = _find_number(year, key)
-            if v is not None:
-                span = json_span(t, key, start=start, end=end)
-                p.add_claim(f"accounts_{flag}", "financials",
-                            {"value": (not v) if flag == "audited" else bool(v), "period": period_str, "account_type": kind},
-                            [_ev(p, snap, span, m)], period=period_str,
-                            label="Accounts audited" if flag == "audited" else "Audit opted out")
+        not_audited = _find_number(year, "ikkeRevidertAarsregnskap")
+        opted_out = _find_number(year, "fravalgRevisjon")
+        if not_audited is not None and opted_out is not None:
+            audited = not not_audited and not opted_out
+            span = json_span(t, "fravalgRevisjon", opted_out, start=start, end=end)
+            p.add_claim("accounts_audited", "financials",
+                        {"value": audited, "audit_opted_out": bool(opted_out), "period": period_str, "account_type": kind},
+                        [_ev(p, snap, span, m)], period=period_str, label="Accounts audited")
         summary.append(row)
     summary.sort(key=lambda r: (r["period"], r["account_type"] or ""))
     p.context["accounts"] = summary
@@ -347,6 +352,7 @@ async def group_structure(p: Profile, f: Fetcher) -> None:
     body = snap.json()
 
     added = 0
+    seen_nodes: set[str] = set()
 
     def walk(node: Any) -> None:
         nonlocal added
@@ -357,18 +363,27 @@ async def group_structure(p: Profile, f: Fetcher) -> None:
         if not isinstance(node, dict):
             return
         nr = node.get("organisasjonsnummer")
-        if nr and nr != org and added < 60:
+        if nr and nr != org and nr not in seen_nodes and added < 60:
+            seen_nodes.add(nr)
             parent = node.get("parentOrganisasjonsnummer")
             if parent == org:
                 relation = "subsidiary"
+                ownership = node.get("grunnlag")
             elif nr == (p.context.get("group_parent") or ""):
                 relation = "parent"
+                ownership = (p.context.get("own_group_node") or {}).get("grunnlag")
+            elif not parent:
+                relation = "ultimate parent"
+                ownership = None
             else:
                 relation = "group company"
+                ownership = None
             link = node.get("knytningsform") or {}
             rel = {"organisation_number": nr, "name": node.get("navn"), "relation": relation,
-                   "link": link.get("beskrivelse"), "ownership_basis": node.get("grunnlag"),
-                   "level": node.get("nivaa"), "parent_organisation_number": parent, "since": node.get("dato")}
+                   "ownership_basis": ownership, "level": node.get("nivaa"),
+                   "parent_organisation_number": parent, "since": node.get("dato")}
+            if relation == "subsidiary":
+                rel["link"] = link.get("beskrivelse")
             bounds = json_object_bounds(t, f'"organisasjonsnummer":"{nr}"')
             span = json_span(t, "organisasjonsnummer", nr, start=bounds[0], end=bounds[1]) if bounds else None
             if p.add_claim("group_relation", "identity", rel, [_ev(p, snap, span, m)], label="Group company",
@@ -387,6 +402,7 @@ async def group_structure(p: Profile, f: Fetcher) -> None:
         elif isinstance(node, dict):
             if node.get("organisasjonsnummer") == org and node.get("parentOrganisasjonsnummer"):
                 p.context["group_parent"] = node["parentOrganisasjonsnummer"]
+                p.context["own_group_node"] = {k: v for k, v in node.items() if k != "children"}
             for v in node.values():
                 find_parent(v)
 

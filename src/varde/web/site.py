@@ -338,6 +338,19 @@ def _social(href: str) -> str | None:
     return f"{platform}/{handle}".lower()
 
 
+def _reads_like_prose(text: str) -> bool:
+    """Reject navigation dumps: repeated chunks or mostly capitalised menu words."""
+    words = text.split()
+    if len(words) < 6:
+        return False
+    for i in range(0, max(1, len(text) - 40), 10):
+        chunk = text[i:i + 30]
+        if len(chunk) == 30 and text.count(chunk) > 1:
+            return False
+    caps = sum(1 for w in words if w[:1].isupper())
+    return caps / len(words) < 0.5
+
+
 def _jsonld(pv: PageView) -> list[dict]:
     out = []
     for node in pv.tree.css('script[type="application/ld+json"]'):
@@ -398,7 +411,7 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
     for sel in ('meta[name="description"]', 'meta[property="og:description"]'):
         node = home.tree.css_first(sel)
         content = (node.attributes.get("content") or "").strip() if node else ""
-        if 40 <= len(content) <= 600:
+        if 40 <= len(content) <= 600 and _reads_like_prose(content):
             raw = _raw_find(home.snap.text, re.escape(content[:60]))
             if raw:
                 p.add_claim("website_description", "web_presence", unescape(content), [ev(home, raw)],
@@ -540,7 +553,7 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
                 title_txt = unescape(re.sub(r"<!\[CDATA\[|\]\]>|<[^>]+>", "", t.group(1))).strip()
                 when = _rss_date(d.group(2))
                 when = _date_ok(when, founded) if when else None
-                if title_txt and when and not STUB_NEWS.search(title_txt):
+                if title_txt and when and not STUB_NEWS.search(title_txt) and not re.search(r"[?&]p=1(?!\d)", block):
                     href = (link.group(1) or link.group(2) or "").strip() if link else ""
                     news.append((title_txt, when, fv, t.group(0), href or feed_link))
                 if len(news) >= 10:

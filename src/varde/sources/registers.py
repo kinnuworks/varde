@@ -282,8 +282,12 @@ async def ted_batch(f: Fetcher, orgs: list[str]) -> dict[str, list[tuple[Snapsho
             if isinstance(snap, FetchError):
                 continue
         for notice in snap.json().get("notices") or []:
-            winners = {re.sub(r"\D", "", str(x)) for x in notice.get("winner-identifier") or []}
-            buyers = {re.sub(r"\D", "", str(x)) for x in notice.get("buyer-identifier") or []}
+            winner_ids = [re.sub(r"\D", "", str(x)) for x in notice.get("winner-identifier") or []]
+            # The identifier list can include every tenderer; only a single-winner notice is unambiguous.
+            winners = set(winner_ids) if len(set(winner_ids)) == 1 else set()
+            buyer_ids = {re.sub(r"\D", "", str(x)) for x in notice.get("buyer-identifier") or []}
+            # Joint qualification systems list hundreds of buyers and say nothing about one of them.
+            buyers = buyer_ids if len(buyer_ids) <= 5 else set()
             for o in chunk:
                 if o in winners:
                     out.setdefault(o, []).append((snap, notice, "winner"))
