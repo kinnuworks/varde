@@ -148,7 +148,9 @@ def template(p: Profile) -> dict:
     if site:
         text = f"Its verified website is {site['value']}"
         if socials:
-            text += ", which links to " + ", ".join(sorted({c['value'].split('/')[0].split('.')[0].capitalize() for c in socials}))
+            names = {"linkedin": "LinkedIn", "youtube": "YouTube", "tiktok": "TikTok", "x": "X"}
+            plats = sorted({c['value'].split('/')[0].split('.')[0] for c in socials})
+            text += ", which links to its " + ", ".join(names.get(x, x.capitalize()) for x in plats) + " profile" + ("s" if len(plats) > 1 else "")
         add(text + ".", [site] + socials[:6])
 
     jobs = p.published("job_ad")

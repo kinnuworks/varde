@@ -85,7 +85,13 @@ def main(argv: list[str] | None = None) -> None:
     if not args.no_html:
         try:
             from .report import write_report
-            write_report(envelopes, out_dir / "report.html", {
+            slim = []
+            for e in envelopes:
+                e2 = dict(e)
+                e2["evidence"] = [{k: v for k, v in x.items() if k not in ("requested_url", "http_status", "redirect_chain")}
+                                  for x in e["evidence"]]
+                slim.append(e2)
+            write_report(slim, out_dir / "report.html", {
                 "agent": report["agent"], "version": report["version"], "run_id": run_id,
                 "started_at": report["started_at"], "completed_at": report["completed_at"],
                 "companies": len(envelopes), "requests": report["requests"], "cost_usd": 0})
