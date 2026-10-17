@@ -127,3 +127,11 @@ def test_unique_name_on_matching_domain_with_town():
     p.context["name_unique"] = False
     proof, _ = prove(p, view(snap(html, "https://krauman.no/")), Candidate("https://krauman.no/", "name_derived"))
     assert proof is None
+
+
+def test_contact_page_with_other_orgnr_blocks_name_proof(monkeypatch):
+    # name_unique must treat a longer registered name containing ours as a clash
+    from varde.util import core_name as cn
+    core = cn("BLINDHEIM MASKIN AS")
+    other = cn("BLINDHEIM MASKIN & TRANSPORT AS")
+    assert f" {core} " in f" {other} "

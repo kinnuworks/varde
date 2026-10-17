@@ -628,6 +628,11 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
     if feed_link and registered_domain(feed_link) == site_dom:
         snap = await f.get(feed_link, company=org)
         if not isinstance(snap, FetchError):
+            blocks = re.findall(r"<(?:item|entry)\b.*?</(?:item|entry)>", snap.text, re.S | re.I)
+            unc = sum(1 for b in blocks if re.search(r"<category[^>]*>\s*(<!\[CDATA\[)?\s*(uncategorized|ukategorisert)", b, re.I))
+            if blocks and unc / len(blocks) > 0.5:
+                snap = FetchError(feed_link, "catalogue_feed")
+        if not isinstance(snap, FetchError):
             fv = PageView(snap, HTMLParser(snap.text), snap.text)
             for item in re.finditer(r"<(item|entry)\b.*?</\1>", snap.text, re.S | re.I):
                 block = item.group(0)
@@ -635,6 +640,10 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
                 d = re.search(r"<(pubDate|published|updated|dc:date)[^>]*>(.*?)</\1>", block, re.S | re.I)
                 link = re.search(r"<link[^>]*>(.*?)</link>|<link[^>]*href=\"([^\"]+)\"", block, re.S | re.I)
                 if not t or not d:
+                    continue
+                cats = [unescape(re.sub(r"<!\[CDATA\[|\]\]>", "", c)).strip().casefold()
+                        for c in re.findall(r"<category[^>]*>(.*?)</category>", block, re.S | re.I)]
+                if cats and all(c in ("uncategorized", "ukategorisert", "uncategorised") for c in cats):
                     continue
                 title_txt = unescape(re.sub(r"<!\[CDATA\[|\]\]>|<[^>]+>", "", t.group(1))).strip()
                 when = _rss_date(d.group(2))
@@ -676,6 +685,10 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
                 d = re.search(r"<(pubDate|published|updated|dc:date)[^>]*>(.*?)</\1>", block, re.S | re.I)
                 link = re.search(r"<link[^>]*>(.*?)</link>|<link[^>]*href=\"([^\"]+)\"", block, re.S | re.I)
                 if not t or not d:
+                    continue
+                cats = [unescape(re.sub(r"<!\[CDATA\[|\]\]>", "", c)).strip().casefold()
+                        for c in re.findall(r"<category[^>]*>(.*?)</category>", block, re.S | re.I)]
+                if cats and all(c in ("uncategorized", "ukategorisert", "uncategorised") for c in cats):
                     continue
                 title_txt = unescape(re.sub(r"<!\[CDATA\[|\]\]>|<[^>]+>", "", t.group(1))).strip()
                 when = _rss_date(d.group(2))
@@ -794,8 +807,8 @@ def _drop_bursts(items: list) -> list:
     keep = []
     for item in items:
         t = item[1]
-        close = sum(1 for u in times if u[:16] == t[:16])
-        if close >= 4 and len(t) > 13:
+        close = sum(1 for u in times if u[:10] == t[:10])
+        if close >= 4 and len(t) > 10:
             continue
         keep.append(item)
     return keep
@@ -907,8 +920,17 @@ async def name_unique(p: Profile, f: Fetcher) -> bool | None:
         hits = (snap.json().get("_embedded") or {}).get("enheter") or []
     except ValueError:
         return None
+    def clashes(name: str) -> bool:
+        other = core_name(name)
+        return other == core or f" {core} " in f" {other} "
     others = [h for h in hits if h.get("organisasjonsnummer") != p.organisation_number
-              and core_name(h.get("navn") or "") == core and not h.get("slettedato")]
+              and clashes(h.get("navn") or "") and not h.get("slettedato")]
+    group = set(p.context.get("group_orgs", set())) | {p.context.get("group_parent")}
+    p.context["other_entity_domains"] = {d for h in hits if h.get("organisasjonsnummer") != p.organisation_number
+                                         and h.get("organisasjonsnummer") not in group
+                                         for d in (registered_domain(h.get("hjemmeside") or "") if h.get("hjemmeside") else None,
+                                                   registered_domain((h.get("epostadresse") or "@").split("@", 1)[1]) if h.get("epostadresse") else None)
+                                         if d}
     return not others
 
 
@@ -970,6 +992,29 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
         if not proof or not proof.span:
             rejected.append(f"{cand.url}: {reason or 'proof has no quotable span'}")
             continue
+        if proof.strength < 3:
+            dom_c = registered_domain(snap.final_url)
+            own = {registered_domain(rec_h) for rec_h in [(p.context.get("entity") or {}).get("hjemmeside") or ""] if rec_h}
+            own_email = ((p.context.get("entity") or {}).get("epostadresse") or "")
+            if "@" in own_email:
+                own.add(registered_domain(own_email.split("@", 1)[1]))
+            if dom_c in p.context.get("other_entity_domains", set()) and dom_c not in own:
+                rejected.append(f"{cand.url}: the register lists this domain for another company")
+                continue
+            check_pv = contact_pv
+            if check_pv is None:
+                link = next((a for a, _r, _t in pv.links if registered_domain(a) == dom_c
+                             and re.search(r"(kontakt|contact|om-oss|about)", a, re.I)), None)
+                if link:
+                    csnap = await f.get(link, company=org)
+                    if not isinstance(csnap, FetchError):
+                        check_pv = view(csnap)
+            if check_pv is not None:
+                lab, _all = orgnr_mentions(check_pv.text)
+                foreign = lab - {org} - set(p.context.get("group_orgs", set()))
+                if foreign and org not in _all:
+                    rejected.append(f"{cand.url}: the contact page names other organisation number(s) {sorted(foreign)[:2]}")
+                    continue
         proof_pv = contact_pv if contact_pv and proof else pv
         e = p.add_evidence(proof_pv.snap, source_class="company_owned", span=proof.span, method="website_identity_v1",
                            licence="Company-owned page; quoted as identity proof",

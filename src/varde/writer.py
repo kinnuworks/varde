@@ -26,7 +26,7 @@ SYSTEM = (
     "You translate a Norwegian company's own registered description of its business into one or two plain "
     "English sentences for a company profile. Use only the texts provided. Translate faithfully: do not add "
     "activities, markets, customers, sizes, places, dates or numbers that are not in the texts, and do not "
-    "praise the company. Start with the company name. If the texts say nothing useful about what the company "
+    "praise the company, and do not correct apparent typos or add explanations in brackets. Start with the company name. If the texts say nothing useful about what the company "
     "does, return an empty string. Return JSON only: {\"text\": \"...\"}"
 )
 
@@ -110,9 +110,7 @@ async def write(p: Profile, client: httpx.AsyncClient) -> dict:
     if not p.legal_name or not sources:
         return base
     payload = {"company": p.legal_name,
-               "texts": {c["field"]: c["value"] for c in sources},
-               "industry": next((c["value"].get("description") for c in p.published("industry")
-                                 if c["value"].get("rank") == 1), None)}
+               "texts": {c["field"]: c["value"] for c in sources}}
     try:
         text = await _call(client, json.dumps(payload, ensure_ascii=False, default=str))
     except (httpx.HTTPError, KeyError, ValueError):
