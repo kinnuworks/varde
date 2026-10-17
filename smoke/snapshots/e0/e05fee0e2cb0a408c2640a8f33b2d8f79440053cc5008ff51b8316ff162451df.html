@@ -1,0 +1,2395 @@
+
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <script async type="text/javascript" src="/js/es-module-shims.js?v=21.25.2"></script>
+<script type="importmap">{
+    "imports": {
+        "@floating-ui/core": "/node_modules/@floating-ui/core/dist/floating-ui.core.esm.min.js",
+        "@floating-ui/dom": "/node_modules/@floating-ui/dom/dist/floating-ui.dom.esm.min.js",
+        "@fluejs/noscroll": "/node_modules/@fluejs/noscroll/dist/index.mjs",
+        "@lit/reactive-element": "/node_modules/@lit/reactive-element/reactive-element.js",
+        "@ungap/custom-elements": "/node_modules/@ungap/custom-elements/index.js",
+        "fabric": "/node_modules/fabric/dist/index.mjs",
+        "gridjs": "/node_modules/gridjs/dist/gridjs.module.js",
+        "i18next": "/node_modules/i18next/dist/esm/i18next.js",
+        "i18next-resources-to-backend": "/node_modules/i18next-resources-to-backend/dist/esm/index.js",
+        "lit": "/node_modules/lit/index.js",
+        "lit-element/lit-element.js": "/node_modules/lit-element/lit-element.js",
+        "lit-html": "/node_modules/lit-html/lit-html.js",
+        "lit-html/directives/live": "/node_modules/lit-html/directives/live.js",
+        "lit-html/directives/ref": "/node_modules/lit-html/directives/ref.js",
+        "lit-html/directives/ref.js": "/node_modules/lit-html/directives/ref.js",
+        "lit-html/directives/repeat": "/node_modules/lit-html/directives/repeat.js",
+        "lit-html/directives/repeat.js": "/node_modules/lit-html/directives/repeat.js",
+        "lit-html/directives/unsafe-html": "/node_modules/lit-html/directives/unsafe-html.js",
+        "lit-html/is-server.js": "/node_modules/lit-html/is-server.js",
+        "notyf": "/node_modules/notyf/notyf.es.js",
+        "opentype.js": "/node_modules/opentype.js/dist/opentype.module.js",
+        "qr-scanner": "/node_modules/qr-scanner/qr-scanner.min.js",
+        "swiper": "/node_modules/swiper/swiper.mjs",
+        "swiper/modules/autoplay.mjs": "/node_modules/swiper/modules/autoplay.mjs",
+        "swiper/modules/effect-fade.mjs": "/node_modules/swiper/modules/effect-fade.mjs",
+        "swiper/modules/free-mode.mjs": "/node_modules/swiper/modules/free-mode.mjs",
+        "swiper/modules/navigation.mjs": "/node_modules/swiper/modules/navigation.mjs",
+        "swiper/modules/pagination.mjs": "/node_modules/swiper/modules/pagination.mjs",
+        "swiper/modules/thumbs.mjs": "/node_modules/swiper/modules/thumbs.mjs"
+    },
+    "scopes": {}
+}</script>
+<link rel="preconnect" href="https://www.googletagmanager.com" />
+<link rel="preconnect" href="https://www.google-analytics.com" />
+<script type="text/javascript">(function(w){w.currencyFormat={"s":"NOK","d":2,"ds":",","gs":" ","p":2,"ex":1.000000000000000000};w.globalSettings={"enableResponsiveFeatures":true,"showBuyFeedbackPopup":false,"enableMPEF":true,"enableFrontEndEditing":false,"language":3,"CountryCode":"NO","showShoppingHistory":false,"showConfirmUserDetailsPopup":false,"showFreeShipingOfferPopup":true,"freeShippingMessageSettings":null,"activeCurrencyCode":"NOK","siteCurrencyCode":"NOK","version":"21.25.2","locale":"nb-NO","twoLetterLocale":"nb","twoLetterLocaleFallBacks":["nb","nn","no","en"],"displayPricesIncludingVat":true,"overbuyEventSettings":{"warningText":"Valgt antall er mer enn antall på lager.\r\n[Product name]: [QTY] på lager.","bannerText":"Et eller flere av produktene er ikke på lager. Hele bestillingen vil bli sendt når alle produktene er på lager.","availableQuantityStockText":"[QTY] på lager.","deliveryTimeText":"Sendes i løpet av 2-3 uker","orderingProductStockText":{"stockText":"Bestillingsvare","color":"Red","cssClass":"ordering-product"},"showExpectedInStockText":false,"showOverbuyingMessage":false}};w.searchUrl="/sok?s=";w.TopFormText={"cookiePolicy":"Cookie Policy","privacyPolicy":"personvernerklæring","understand":"Jeg forstår","toggleSubMenu":"Åpne/lukke undermeny","changedAgreementsMessage":"Policy er endret. Ved å bruke våre tjenester godtar du endringene i","intialAgreementsMessage":"Ved å bruke våre tjenester godtar du","readItCarefully":"Please read it carefully.","and":"og","bySubscribingYouAgree":"Ved å melde deg på nyhetsbrev godtar du vår","subscribeToNewsletter":"Nyhetsbrevpåmelding, vennligst les vår","newsletters":"Nyhetsbrev","accept":"Jeg aksepterer","decline":"Jeg avslår","newsletterRegisterSuccess":"Du er nå påmeldt nyhetsbrev","newsletterRegisterError":"Du er ikke påmeldt nyhetsbrev","downloadMyPersonalData":"Last ned mine persondata i portabelt format:","formatNotSpecified":"Format er ikke spesifisert","myPersonalData":"mine persondata","personalData":"persondata","downloadPersonalDataError":"En feil oppsto ved nedlasting av persondata","addMeAsNewsletterRecipient":"Legg meg til som nyhetsbrevmottaker, vennligst les vår","yes":"Ja","no":"Nei","select":"Velg...","nameButtonSubscribe":"Abonnere","nameButtonUnsubscribe":"Avslutt abonnement","SubscribeSuccess":"Abonnementet er fullført","UnsubscribeSuccess":"Avmelding fullført","agreementsThirdPartyUsageMsg":"Partnerne våre samler inn opplysninger og bruker informasjonskapsler for måling og personlig tilpasning av annonser.","helpIcon":"Hjelp ikonet","Share_by":"Del med","More_sharing_options":"Flere alternativer for deling","textprivacyPolicy":"Ved å melde deg på vårt nyhetsbrev godtar du vår","contactUs":"Kontakt oss"};w.isPostBack=function(){return false;};w.BasePageID=143;w.BaseItemID=5401;w.productGroupsRootPageId=47;w.LanguageID=3;window.process = {env: {NODE_ENV: 'production'}};})(window);</script>
+<script type="text/javascript">function gtag(){dataLayer.push(arguments)}function gtm_update_consent(){function t(t){t=("; "+document.cookie).split("; "+t+"=");return 2===t.length?t.pop().split(";").shift():null}var e,a=t("cookie-consent-statistical"),n=t("cookie-consent-marketing");a&&a.length&&n&&n.length&&gtag("consent","update",{ad_storage:n=(e=t=>"1"===t?"granted":"denied")(n),ad_user_data:n,ad_personalization:n,analytics_storage:e(a)})}window.dataLayer=window.dataLayer||[],gtag("consent","default",{ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied",analytics_storage:"denied"}),gtm_update_consent(),document.addEventListener("cookie-consent-updated",()=>gtm_update_consent());</script>
+<script type="text/javascript">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-KCSFKZT');</script>
+<link rel="canonical" href="https://www.alfabrannvern.no/informasjon/kontroll-av-brannslukningsapparat-hvor-ofte" />
+<meta property="og:title" content="Kontroll av brannslukningsapparat – hvor ofte? - Alfa Brannvern AS | Brannvern og slokkeutstyr"/>
+<meta property="og:description" content="Hvor ofte skal et brannslukningsapparat kontrolleres?
+
+Brannslukningsapparater m&#229; kontrolleres og vedlikeholdes for &#229; sikre at de fungerer n&#229;r det virkelig gjelder. Hvor ofte apparatet skal kontrolleres og ha service, avhenger blant annet av hvor det er plassert, hvilken type slokkemiddel det inneholder og bruken av bygget.
+
+Her forklarer vi forskjellen mellom egenkontroll, faglig kontroll og service p&#229; brannslukningsapparater, og hvilke intervaller som gjelder etter NS 3910:2020."/>
+<meta property="og:image" content="https://www.alfabrannvern.no/image/alfa-brannvern/informasjon/kontroll-av-brannslukningsapparat-hvor-ofte.png?v=639238800368230000"/>
+<meta property="og:url" content="https://www.alfabrannvern.no/informasjon/kontroll-av-brannslukningsapparat-hvor-ofte"/>
+<meta property="og:type" content="website"/>
+
+    <script type="text/javascript">document.cookie='resolution='+Math.max(screen.width,screen.height)+("devicePixelRatio" in window ? ","+devicePixelRatio : ",1")+'; path=/';</script>
+    <title>Kontroll av brannslukningsapparat – hvor ofte? - Alfa Brannvern AS | Brannvern og slokkeutstyr</title>
+    <meta name="Author" content="Alfa Brannvern AS" />
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta content="Hvor ofte skal et brannslukningsapparat kontrolleres? Les om kontroll, service, vedlikehold og intervaller for pulver-, skum- og CO₂-apparater." name="description" />
+
+    <meta name="SKYPE_TOOLBAR" content="SKYPE_TOOLBAR_PARSER_COMPATIBLE" />
+    <link rel="icon" type="image/svg+xml" href="/image/systembilder/favicon.svg">
+    <!-- Root variable, used to define root in javascripts -->
+    <script type="text/javascript">var R = '/';</script>
+    <meta name="viewport" content="initial-scale=1,width=device-width">
+    <!-- Global javascripts -->
+    <script type="text/javascript" src="/js/global.js"></script>
+    <!-- Required resources (Usually scripts required by a control) -->
+    <script type="text/javascript" src="/js/pubsub.min.js?v=21.25.2"></script><!--[if lt IE 9]><script type="text/javascript" src="/js/jquery-1.11.3.min.js"></script><script type="text/javascript" src="/js/jquery-migrate-1.2.1.min.js"></script><![endif]--><!--[if gte IE 9]><!--><script type="text/javascript" src="/js/jquery-2.1.4.min.js?v=21.25.2"></script><!--<![endif]--><script type="text/javascript">jQuery.noConflict();</script><script type="text/javascript" src="/js/unorm.min.js?v=21.25.2"></script><script type="text/javascript" src="/js/underscore-min.js?v=21.25.2"></script><script type="text/javascript" src="/js/jquery.plugins.min.js?v=21.25.2"></script><script src="/js/fancybox-3/jquery.fancybox.min.js?v=21.25.2" type="text/javascript"></script><link href="/js/fancybox-3/jquery.fancybox.min.css?v=21.25.2" rel="stylesheet" type="text/css"><script src="/js/jquery.easing-1.3.pack.js?v=21.25.2" type="text/javascript"></script><script src="/js/jquery.mousewheel-3.0.6.pack.js?v=21.25.2" type="text/javascript"></script><link href="/js/flexslider.min.css?v=21.25.2" type="text/css" rel="stylesheet"><script src="/js/jquery.flexslider.min.js?v=21.25.2" type="text/javascript"></script><script src="/js/multilevelmenu2.min.js?v=21.25.2" type="text/javascript"></script><link rel="stylesheet" href="/js/jquery-ui-1.11.4/jquery-ui.min.css?v=21.25.2"><script type="text/javascript" src="/js/jquery-ui-1.11.4/jquery-ui.min.js?v=21.25.2"></script><script type="text/javascript" src="/startup/js/jquery-ui-timepicker-addon.min.js?v=21.25.2"></script><script type="text/javascript" src="/startup/js/jquery.ui.datepicker-no.js?v=21.25.2"></script><script type="text/javascript">jQuery.widget.bridge("jqtooltip", jQuery.ui.tooltip);</script><script src="/js/jquery.easytabs.min.js?v=21.25.2" type="text/javascript"></script><script src="/js/linkimagelist2.min.js?v=21.25.2" type="text/javascript"></script><script type="text/javascript" src="/js/jquery.qtip.min.js?v=21.25.2"></script><script type="text/javascript" src="/js/jquery.validate-1.11.1.min.js?v=21.25.2"></script><script type="text/javascript" src="/js/mosoft.estore.min.js?v=21.25.2"></script><script type="text/javascript" src="/js/require.min.js?v=21.25.2"></script><script type="text/javascript" src="/js/noty/packaged/jquery.noty.packaged.min.js?v=21.25.2"></script><script type="text/javascript" src="/js/jquery.blockUI.min.js?v=21.25.2"></script><script type="text/javascript" src="/js/jquery.twbsPagination.min.js?v=21.25.2"></script><script type="text/javascript" src="/js/main.min.js?v=21.25.2"></script><script src="/js/recaptcha-handler.min.js?v=21.25.2"></script><script src="https://www.google.com/recaptcha/api.js?onload=recaptcha_onload&render=explicit&v=21.25.2" async="" defer=""></script><script src="/js/cms/main.js?v=21.25.2"></script><script src="/js/recaptcha2-invisible.min.js?v=21.25.2"></script><script src="/js/lazysizes/lazysizes.min.js?v=21.25.2" async=""></script>
+    <!-- CSS -->
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,400italic,700&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+    <link href="/theme/css/shop8h1.css?v=03.03.2022" type="text/css" rel="stylesheet" />
+    <link href="/theme/css/updates.css?v=03.03.2022" type="text/css" rel="stylesheet" />
+
+    
+</head>
+<body class="L2_LeftFixed NewsViewPage holder-143 item-5401">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KCSFKZT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<form method="post" action="/informasjon/kontroll-av-brannslukningsapparat-hvor-ofte" id="Webdoc">
+<div class="aspNetHidden">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="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" />
+</div>
+
+    
+
+<div id="mobileNavigationSidebar" class="mn-sitebar mn-sitebar_dark mn-sitebar_right tp-show">
+    <a href="/handlekurv" class="mn-sitebar__button siteCart">
+        <i class="mn-sitebar__button-icon un-site-cart"></i>
+    </a>
+    <div class="mn-sitebar__button mn-sitebar_js_onclick">
+        <i class="mn-sitebar__button-icon un-bars mn-sitebar_js_icon-toggle"></i>
+        <i class="mn-sitebar__button-icon un-close mn-sitebar_js_icon-toggle hide"></i>
+    </div>
+    <div class="mn-sitebar__slide">
+        
+        <div id="ctl00_SearchMobile_pnlSearch" class="Search clearfix mn-search">
+	
+    <input name="ctl00$SearchMobile$txbSearch" type="text" id="ctl00_SearchMobile_txbSearch" autocomplete="section-search" onfocus="this.select();" placeholder="SØK" aria-label="SØK" />
+    <input type="submit" name="ctl00$SearchMobile$btnSearch" value=" " id="ctl00_SearchMobile_btnSearch" />
+    <script type="text/javascript">
+        (function(w, d) {
+            var txb = d.querySelector('#ctl00_SearchMobile_txbSearch');
+            var btn = d.querySelector('#ctl00_SearchMobile_btnSearch');
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                var term = txb.value.trim();
+                if (term !== '') {
+                    w.location = '/sok?s=' + encodeURIComponent(term);
+                }
+                return false;
+            });
+        })(window, document);
+    </script>
+
+</div>
+
+        
+        
+
+    <div class="productMenuMobile Menu mn-product-menu Expandable">
+            <div class="TopBox MenuTitleContainer">
+                <h1 class="MainTitle heading-h1">Produktmeny</h1>
+            </div>
+        <ul class="MiddleBox Level-1 clearfix">
+                <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/nye-produkter" class="Name" >Nye produkter</a>
+        
+    </li>
+    <li class="Item-2 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/hms-skilter" class="Name" >HMS skilter</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/nodutgangsskilt" class="Name" >N&#248;dutgangsskilt</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/brannskilter" class="Name" >Brannskilter</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/underskilter" class="Name" >Underskilter</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/forstehjelpsutstyr" class="Name" >F&#248;rstehjelpsutstyr</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/varsel-og-fareskilt" class="Name" >Varsel og fareskilt</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/forbudsskilt" class="Name" >Forbudsskilt</a>
+        
+    </li>
+    <li class="Item-7 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/paabudsskilt" class="Name" >P&#229;budsskilt</a>
+        
+    </li>
+    <li class="Item-8 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/privatrettslig-skilter" class="Name" >Privatrettslig skilter</a>
+        
+    </li>
+    <li class="Item-9 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/informasjonsskilt" class="Name" >Informasjonsskilt</a>
+        
+    </li>
+    <li class="Item-10 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/bygg-og-anlegg" class="Name" >Bygg og anlegg</a>
+        
+    </li>
+    <li class="Item-11 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/varselposter" class="Name" >Varselposter</a>
+        
+    </li>
+    <li class="Item-12 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/eksklusive-informasjonsskilt" class="Name" >Eksklusive informasjonsskilt</a>
+        
+    </li>
+    <li class="Item-13 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/reflekterende-skilter" class="Name" >Reflekterende skilter</a>
+        
+    </li>
+    <li class="Item-14 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/evakuering-av-husdyr" class="Name" >Evakuering av husdyr</a>
+        
+    </li>
+    <li class="Item-15 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/markeringstriper" class="Name" >Markeringstriper</a>
+        
+    </li>
+    <li class="Item-16 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/branninstrukser" class="Name" >Branninstrukser</a>
+        
+    </li>
+    <li class="Item-17 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/folieskilt" class="Name" >Folieskilt</a>
+        
+    </li>
+    <li class="Item-18 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/festemateriell" class="Name" >Festemateriell</a>
+        
+    </li>
+    <li class="Item-19 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/hms-skilter/lll-linjemerking" class="Name" >LLL-linjemerking</a>
+        
+            <ul class="Level-3 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/lll-linjemerking/linjemerking-for-gulv" class="Name" >Linjemerking for gulv</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-20 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/hms-skilter/adr-rid-godsmerking" class="Name" >ADR-RID-Godsmerking</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-3 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/tape" class="Name" >Tape</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/tape/antiskli" class="Name" >Antiskli</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/tape/spraystop" class="Name" >Spraystop</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/tape/gulvtape" class="Name" >Gulvtape</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/tape/varseltape" class="Name" >Varseltape</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/tape/refleks-folie" class="Name" >Refleks Folie</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/tape/fluoriserende" class="Name" >Fluoriserende</a>
+        
+    </li>
+    <li class="Item-7 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/tape/gaffatape" class="Name" >Gaffatape</a>
+        
+    </li>
+    <li class="Item-8 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/tape/avsperring" class="Name" >Avsperring</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-4 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/nodlys" class="Name" >N&#248;dlys</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/nodlys/sentralisert-nodlys" class="Name" >Sentralisert n&#248;dlys</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/nodlys/markeringslys" class="Name" >Markeringslys</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/nodlys/ledelys" class="Name" >Ledelys</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/nodlys/kombiarmatur" class="Name" >Kombiarmatur</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/nodlys/antipanikk-lys" class="Name" >Antipanikk lys</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/nodlys/tilbehor" class="Name" >Tilbeh&#248;r</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-5 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/batterier" class="Name" >Batterier</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/batterier/nodlysbatterier" class="Name" >N&#248;dlysbatterier</a>
+        
+            <ul class="Level-3 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/nodlysbatterier/24v-2-celler" class="Name" >2,4V (2 celler)</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/nodlysbatterier/36v-3-celler" class="Name" >3,6V (3 celler)</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/nodlysbatterier/48v-4-celler" class="Name" >4,8V (4 celler)</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/nodlysbatterier/60v-5-celler" class="Name" >6,0V (5 celler)</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/nodlysbatterier/72v-6-celler" class="Name" >7,2V (6 celler)</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/nodlysbatterier/84v-7-celler" class="Name" >8,4V (7 celler)</a>
+        
+    </li>
+    <li class="Item-7 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/nodlysbatterier/96v-8-celler" class="Name" >9,6V (8 celler)</a>
+        
+    </li>
+    <li class="Item-8 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/nodlysbatterier/108v-9-celler" class="Name" >10,8V (9 celler)</a>
+        
+    </li>
+    <li class="Item-9 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/nodlysbatterier/12v-10-celler" class="Name" >12V (10 celler)</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/sentraler" class="Name" >Sentraler</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/roykvarslere" class="Name" >R&#248;ykvarslere</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/engangs-batterier" class="Name" >Engangs batterier</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/detektorer" class="Name" >Detektorer</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/batterier/batteriboks" class="Name" >Batteriboks</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-6 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/haandslokkere" class="Name" >H&#229;ndslokkere</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/pulverslukker" class="Name" >Pulverslukker</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/skumslukker" class="Name" >Skumslukker</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/co2-slukker" class="Name" >Co2-slukker</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/frityrslukker" class="Name" >Frityrslukker</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/metallbrannslukker" class="Name" >Metallbrannslukker</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/skap-for-haandslukkere" class="Name" >Skap for h&#229;ndslukkere</a>
+        
+    </li>
+    <li class="Item-7 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/mobile-slukkevogner" class="Name" >Mobile slukkevogner</a>
+        
+    </li>
+    <li class="Item-8 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/designstativer" class="Name" >Designstativer</a>
+        
+    </li>
+    <li class="Item-9 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/veggbraketter" class="Name" >Veggbraketter</a>
+        
+    </li>
+    <li class="Item-10 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/overtrekk-til-haandslukkere" class="Name" >Overtrekk til h&#229;ndslukkere</a>
+        
+    </li>
+    <li class="Item-11 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/traller" class="Name" >Traller</a>
+        
+    </li>
+    <li class="Item-12 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/vannslukker" class="Name" >Vannslukker</a>
+        
+    </li>
+    <li class="Item-13 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/haandslokkere/litium-slukker" class="Name" >Litium slukker</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-7 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/branntepper" class="Name" >Branntepper</a>
+        
+    </li>
+    <li class="Item-8 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/brannslanger-og-utstyr" class="Name" >Brannslanger og utstyr</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannslanger-og-utstyr/brannposter" class="Name" >Brannposter</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannslanger-og-utstyr/husbrannslange" class="Name" >Husbrannslange</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannslanger-og-utstyr/straaleror" class="Name" >Str&#229;ler&#248;r</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannslanger-og-utstyr/slangetromler" class="Name" >Slangetromler</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannslanger-og-utstyr/slangevogn" class="Name" >Slangevogn</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannslanger-og-utstyr/skap-m/oppvarming" class="Name" >Skap m/oppvarming</a>
+        
+    </li>
+    <li class="Item-7 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannslanger-og-utstyr/trykktesting-av-brannslanger" class="Name" >Trykktesting av brannslanger</a>
+        
+    </li>
+    <li class="Item-8 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannslanger-og-utstyr/flatslanger" class="Name" >Flatslanger</a>
+        
+    </li>
+    <li class="Item-9 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannslanger-og-utstyr/kuplinger" class="Name" >Kuplinger</a>
+        
+    </li>
+    <li class="Item-10 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannslanger-og-utstyr/reservedeler-og-tilbehor" class="Name" >Reservedeler og tilbeh&#248;r</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-9 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/forstehjelpsutstyr" class="Name" >F&#248;rstehjelpsutstyr</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/forstehjelpsutstyr/forstehjelpskofferter" class="Name" >F&#248;rstehjelpskofferter</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/forstehjelpsutstyr/forstehjelpsvegger" class="Name" >F&#248;rstehjelpsvegger</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/forstehjelpsutstyr/medisinskap" class="Name" >Medisinskap</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/forstehjelpsutstyr/oyeskylle" class="Name" >&#216;yeskylle</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/forstehjelpsutstyr/plasterautomater" class="Name" >Plasterautomater</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/forstehjelpsutstyr/brannskade" class="Name" >Brannskade</a>
+        
+    </li>
+    <li class="Item-7 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/forstehjelpsutstyr/baarer" class="Name" >B&#229;rer</a>
+        
+    </li>
+    <li class="Item-8 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/forstehjelpsutstyr/sport-og-fritid" class="Name" >Sport og fritid</a>
+        
+    </li>
+    <li class="Item-9 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/forstehjelpsutstyr/hjertestarter" class="Name" >Hjertestarter</a>
+        
+    </li>
+    <li class="Item-10 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/forstehjelpsutstyr/utstyr-og-refill" class="Name" >Utstyr og refill</a>
+        
+    </li>
+    <li class="Item-11 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/forstehjelpsutstyr/forstehjelpsbag-og-puter" class="Name" >F&#248;rstehjelpsbag og puter</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-10 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/romningsplaner" class="Name" >R&#248;mningsplaner</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/romningsplaner/romningsplan-3d" class="Name" >R&#248;mningsplan 3D</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/romningsplaner/romningsplan-2d" class="Name" >R&#248;mningsplan 2D</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/romningsplaner/rammer" class="Name" >Rammer</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-11 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/branntegninger" class="Name" >Branntegninger</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/branntegninger/orienteringsplan-brannvarsling" class="Name" >Orienteringsplan brannvarsling</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-12 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/roykvarslere" class="Name" >R&#248;ykvarslere</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/roykvarslere/traadlose-system" class="Name" >Tr&#229;dl&#248;se system</a>
+        
+            <ul class="Level-3 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykvarslere/traadlose-system/ei-electronics" class="Name" >Ei Electronics</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykvarslere/traadlose-system/housegard" class="Name" >Housegard</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykvarslere/traadlose-system/deltronic" class="Name" >Deltronic</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykvarslere/traadlose-system/cavius" class="Name" >Cavius</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykvarslere/frittstaaende" class="Name" >Frittst&#229;ende</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykvarslere/roykvarslere-230v" class="Name" >R&#248;ykvarslere 230V</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykvarslere/reiseroykvarsler" class="Name" >Reiser&#248;ykvarsler</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykvarslere/vann-og-fukt" class="Name" >Vann og fukt</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykvarslere/gassvarslere" class="Name" >Gassvarslere</a>
+        
+    </li>
+    <li class="Item-7 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykvarslere/narkosevarsler" class="Name" >Narkosevarsler</a>
+        
+    </li>
+    <li class="Item-8 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykvarslere/testutstyr-og-tilbehor" class="Name" >Testutstyr og tilbeh&#248;r</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-13 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/brannvarslingsanlegg" class="Name" >Brannvarslingsanlegg</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannvarslingsanlegg/traadlos-varsling" class="Name" >Tr&#229;dl&#248;s varsling</a>
+        
+    </li>
+    <li class="Item-2 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/brannvarslingsanlegg/sloyfebasert-varsling" class="Name" >Sl&#248;yfebasert varsling</a>
+        
+            <ul class="Level-3 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannvarslingsanlegg/sloyfebasert-varsling/brannsentraler" class="Name" >Brannsentraler</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannvarslingsanlegg/sloyfebasert-varsling/detektorer" class="Name" >Detektorer</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannvarslingsanlegg/sloyfebasert-varsling/signalgivere" class="Name" >Signalgivere</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannvarslingsanlegg/sloyfebasert-varsling/manuelle-meldere" class="Name" >Manuelle meldere</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannvarslingsanlegg/dorlukkesentral" class="Name" >D&#248;rlukkesentral</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannvarslingsanlegg/testutstyr" class="Name" >Testutstyr</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannvarslingsanlegg/installasjonsutstyr-og-tilbehor" class="Name" >Installasjonsutstyr og tilbeh&#248;r</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-14 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/brannevakuering" class="Name" >Brannevakuering</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannevakuering/parat-redningsline" class="Name" >Parat redningsline</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannevakuering/hg-brannstige" class="Name" >HG brannstige</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannevakuering/evakueringsstol" class="Name" >Evakueringsstol</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannevakuering/evakueringsteppe" class="Name" >Evakueringsteppe</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannevakuering/fluktmaske" class="Name" >Fluktmaske</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannevakuering/veggmontert-brannstige" class="Name" >Veggmontert brannstige</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-15 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/brannsafer-og-skap" class="Name" >Brannsafer og skap</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannsafer-og-skap/brannkoffert" class="Name" >Brannkoffert</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannsafer-og-skap/brannsafe" class="Name" >Brannsafe</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannsafer-og-skap/arkivskap" class="Name" >Arkivskap</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannsafer-og-skap/kjemikalieskap" class="Name" >Kjemikalieskap</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-16 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/ildsikre-avfallsbeholdere" class="Name" >Ildsikre avfallsbeholdere</a>
+        
+    </li>
+    <li class="Item-17 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/verktoy-og-verkstedmateriell" class="Name" >Verkt&#248;y og verkstedmateriell</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verktoy-og-verkstedmateriell/spennbenk-haandslokkere" class="Name" >Spennbenk h&#229;ndslokkere</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verktoy-og-verkstedmateriell/kontrollverktoy" class="Name" >Kontrollverkt&#248;y</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verktoy-og-verkstedmateriell/tenger" class="Name" >Tenger</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verktoy-og-verkstedmateriell/plomberingsmateriell" class="Name" >Plomberingsmateriell</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verktoy-og-verkstedmateriell/nitrogenfyller" class="Name" >Nitrogenfyller</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verktoy-og-verkstedmateriell/fyllenipler" class="Name" >Fyllenipler</a>
+        
+    </li>
+    <li class="Item-7 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verktoy-og-verkstedmateriell/o-ringer-og-pakninger" class="Name" >O-ringer og pakninger</a>
+        
+    </li>
+    <li class="Item-8 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verktoy-og-verkstedmateriell/pulver" class="Name" >Pulver</a>
+        
+    </li>
+    <li class="Item-9 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verktoy-og-verkstedmateriell/halsringer" class="Name" >Halsringer</a>
+        
+    </li>
+    <li class="Item-10 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verktoy-og-verkstedmateriell/skumvaeske" class="Name" >Skumv&#230;ske</a>
+        
+    </li>
+    <li class="Item-11 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verktoy-og-verkstedmateriell/reservedeler" class="Name" >Reservedeler</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-18 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/maskiner" class="Name" >Maskiner</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/maskiner/pulverfyllemaskiner" class="Name" >Pulverfyllemaskiner</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/maskiner/co2-fyllemaskiner" class="Name" >Co2 fyllemaskiner</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-19 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/roykmaskiner" class="Name" >R&#248;ykmaskiner</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykmaskiner/roykmaskiner" class="Name" >R&#248;ykmaskiner</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykmaskiner/roykvaesker" class="Name" >R&#248;ykv&#230;sker</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/roykmaskiner/tilbehor" class="Name" >Tilbeh&#248;r</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-20 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/branntetting" class="Name" >Branntetting</a>
+        
+    </li>
+    <li class="Item-21 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/verneutstyr" class="Name" >Verneutstyr</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verneutstyr/horselvern" class="Name" >H&#248;rselvern</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verneutstyr/drakter" class="Name" >Drakter</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/verneutstyr/aandedrett" class="Name" >&#197;ndedrett</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-22 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/branndorer" class="Name" >Brannd&#248;rer</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/branndorer/tilbehor-branndorer" class="Name" >Tilbeh&#248;r brannd&#248;rer</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/branndorer/branndor" class="Name" >Brannd&#248;r</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-23 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/skap" class="Name" >Skap</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/skap/dokumentskap" class="Name" >Dokumentskap</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-24 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/slukkeanlegg" class="Name" >Slukkeanlegg</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/slukkeanlegg/hafex" class="Name" >Hafex</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/slukkeanlegg/automatisk-pulverslukker" class="Name" >Automatisk pulverslukker</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/slukkeanlegg/stat-x" class="Name" >Stat-X</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-25 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/askebeger" class="Name" >Askebeger</a>
+        
+    </li>
+    <li class="Item-26 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/lykter" class="Name" >Lykter</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/lykter/nodlykt" class="Name" >N&#248;dlykt</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/lykter/hjelmlykt" class="Name" >Hjelmlykt</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/lykter/ex-lykter" class="Name" >EX-lykter</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-27 Page Expandable">
+
+
+            <a href="#" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter/brannbekledning-og-utstyr" class="Name" >Brannbekledning og utstyr</a>
+        
+            <ul class="Level-2 clearfix">
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannbekledning-og-utstyr/brannstovler" class="Name" >Brannst&#248;vler</a>
+        
+    </li>
+    <li class="Item-2 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannbekledning-og-utstyr/hansker" class="Name" >Hansker</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannbekledning-og-utstyr/brannokser" class="Name" >Brann&#248;kser</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannbekledning-og-utstyr/sprinkler" class="Name" >Sprinkler</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/brannbekledning-og-utstyr/nupla-verktoy" class="Name" >Nupla verkt&#248;y</a>
+        
+    </li>
+
+            </ul>
+    </li>
+    <li class="Item-28 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/adr/oljeabsorberende-utstyr" class="Name" >ADR/Oljeabsorberende utstyr</a>
+        
+    </li>
+    <li class="Item-29 Page NoToggle">
+
+
+        
+
+        <a href="/produkter/stiger" class="Name" >Stiger</a>
+        
+    </li>
+
+        </ul>
+    </div>
+
+
+        
+        
+
+    <div class="siteMenuMobile Menu mn-site-menu NotExpandable">
+            <div class="TopBox MenuTitleContainer">
+                <h1 class="MainTitle heading-h1">Meny</h1>
+            </div>
+        <ul class="MiddleBox Level-1 clearfix">
+                <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/" class="Name" >Hjem</a>
+        
+    </li>
+    <li class="Item-2 Page Expandable">
+
+
+            <a href="/produkter" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter" class="Name" >Produkter</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/tjenester" class="Name" >Tjenester</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle Selected">
+
+
+        
+
+        <a href="/informasjon" class="Name" >Informasjon</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/betingelser" class="Name" >Betingelser</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/om-oss" class="Name" >Om oss</a>
+        
+    </li>
+    <li class="Item-7 Page NoToggle">
+
+
+        
+
+        <a href="/kontakt" class="Name" >Kontakt</a>
+        
+    </li>
+
+        </ul>
+    </div>
+
+
+        
+        <div class="MenuTitleContainer">
+            <h2 class="MenuTitle">Profilmeny</h2>
+        </div>
+        <div class="mn-site-menu mn-site-menu_profile">
+            
+    <ul class="clearfix">
+
+            <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/min-side/registrering-profil" class="Name" >Registrer</a>
+        
+    </li>
+
+
+                <li class="LoginCont">
+                    <a href="/login?ret=%2finformasjon%2fkontroll-av-brannslukningsapparat-hvor-ofte" class="LoginLink">Logg inn</a>
+                </li>
+
+
+    </ul>
+
+        </div>
+
+    </div>
+</div>
+    <div id="root">
+        <header id="header" class="header clearfix">
+            <a href="/" class="logo"><img class="logo-img" src="/theme/images/x-logo.png" alt="Alfa Brannvern AS" title="Alfa Brannvern AS" /></a>
+            
+
+    <div class="SiteMenuDesktop Menu SiteMenu desktop tp-hide Horizontal NotExpandable">
+        <ul class="MiddleBox Level-1 clearfix">
+                <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/" class="Name" >Hjem</a>
+        
+    </li>
+    <li class="Item-2 Page Expandable">
+
+
+            <a href="/produkter" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter" class="Name" >Produkter</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/tjenester" class="Name" >Tjenester</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle Selected">
+
+
+        
+
+        <a href="/informasjon" class="Name" >Informasjon</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/betingelser" class="Name" >Betingelser</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/om-oss" class="Name" >Om oss</a>
+        
+    </li>
+    <li class="Item-7 Page NoToggle">
+
+
+        
+
+        <a href="/kontakt" class="Name" >Kontakt</a>
+        
+    </li>
+
+        </ul>
+    </div>
+
+            <ul class="l-inline pull-right tp-hide headRightPart">
+                <li>
+                    
+
+<div class="SiteCartPanel LeftIconAlign" id="newSiteCart_SiteCartMainPanel">
+
+            <div class="LoginRegisterPanel">
+                <a href="/login?ret=%2finformasjon%2fkontroll-av-brannslukningsapparat-hvor-ofte" class="LoginLink">Logg inn</a>
+                <a href="/min-side/registrering-profil?ret=%2finformasjon%2fkontroll-av-brannslukningsapparat-hvor-ofte" class="RegisterLink">Registrer deg</a>
+            </div>
+
+        <a href="/handlekurv" class="ShowCartLink js-show-cart-link">
+
+            <div class="SiteCartIcon"></div>
+
+            <div class="ShoppingListPanel empty">
+
+                    <span class="ShowCartTxt NotEmptyCart">Vis handlekurv</span>
+                    <span class="ShowCartTxt EmptyCart">Handlekurven er tom</span>
+
+                <span class="ProdCount">0</span>
+
+                                                    <div class="TotalPriceContainer">
+                        <span class="TotalPriceText">Total sum:</span>
+                        <span class="TotalPrice notranslate">kr 0,00</span>
+                    </div>
+            </div>
+        </a>
+
+
+
+    <input type="hidden" class="js-refreshHash" value="" />
+    
+
+    
+    
+    
+</div>
+
+                </li>
+                
+                <li>
+                    
+
+
+
+<div class="smart-search" id="SmartSearch_SmartSearch">
+    <input inputmode="search" class="smart-search__input form-control js-typeahead" type="text" placeholder="S&#248;k" value="" autocomplete="off" aria-label="S&#248;k" />
+    <button class="smart-search__btn" title="S&#248;k" tabindex="-1"><i class="fa fa-search"></i></button>
+</div>
+
+
+                    <!-- <div id="SearchDesktop_pnlSearch" class="Search clearfix">
+	
+    <input name="SearchDesktop$txbSearch" type="text" id="SearchDesktop_txbSearch" autocomplete="section-search" onfocus="this.select();" placeholder="SØK" aria-label="SØK" />
+    <input type="submit" name="SearchDesktop$btnSearch" value=" " id="SearchDesktop_btnSearch" />
+    <script type="text/javascript">
+        (function(w, d) {
+            var txb = d.querySelector('#SearchDesktop_txbSearch');
+            var btn = d.querySelector('#SearchDesktop_btnSearch');
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                var term = txb.value.trim();
+                if (term !== '') {
+                    w.location = '/sok?s=' + encodeURIComponent(term);
+                }
+                return false;
+            });
+        })(window, document);
+    </script>
+
+</div> -->
+                </li>
+                <li>
+                    <div id="SCuserNav" class="pull-right">
+                        
+    <div class="MyProfileButtonCont">
+
+        <a class="MyProfileButton" onclick="return false;" href="javascript:void(0);"><em class="ProfileIcon"></em><span>Min side</span></a>
+        <em class="MyProfileDrop"><em class="DropDownIcon"></em></em>
+
+        <div class="DropDown">
+            <ul class="clearfix">
+
+                    <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/min-side/registrering-profil" class="Name" >Registrer</a>
+        
+    </li>
+
+
+                        <li class="LoginCont">
+                            <a href="/login?ret=%2finformasjon%2fkontroll-av-brannslukningsapparat-hvor-ofte" class="LoginLink">Logg inn</a>
+                        </li>
+
+
+            </ul>
+ 
+            <script type="text/javascript">(function ($, vars) {
+    var vars = {"ControlID":"myPageMenu","Expandable":false};
+    $(function () {
+        //Steal name and logout function
+        var ul = $('div.MyProfileButtonCont ul');
+        var drpBtn = $('div.MyProfileButtonCont em.MyProfileDrop, div.MyProfileButtonCont .MyProfileButton');
+        var drp = $('div.MyProfileButtonCont div.DropDown');
+
+        //Fix dropdown
+        drpBtn.click(function(event) {
+            event.stopPropagation(); 
+            drp.slideToggle('fast');
+            drpBtn.toggleClass('clicked');
+        });
+    });
+})(jQuery);</script>
+        </div>
+
+    </div>
+
+                        <div id="SCloginPanel" class="pull-right"></div>
+                    </div>
+                </li>
+            </ul>
+        </header>
+        <div id="main" class="main">
+	
+            <div id="pageContent" class="main__content clearfix">
+		
+                <div class="holder clearfix">
+                    <div id="crumbs_pnlMain" class="Breadcrumbs">
+			
+    <ul id="crumbs_list" class="clearfix">
+        <li><span class="Prefix">Du er her:</span></li>
+        
+            <li class="PathItem HomePageItem"><span class="Seperator">&lt;</span><a href="/">Hjem</a></li>
+        
+                <li class="PathItem">
+                    <span class="Seperator">&lt;</span>
+                    <a href="/informasjon" >Informasjon</a>
+                </li>
+            
+                <li class="ArchiveItem">
+                    <span class="Seperator">&lt;</span>
+                    <a href="/informasjon/kontroll-av-brannslukningsapparat-hvor-ofte" >Kontroll av brannslukningsapparat – hvor ofte?</a>
+                </li>
+            
+    </ul>
+
+		</div>
+                </div>
+            <input type="hidden" name="hOrderID" id="hOrderID" />
+
+<div class="holder clearfix">
+	<div class="PageColumn First">
+		
+
+    <div class="UC1105 UC179 UC177 clearfix SliderMenu Menu NotExpandable">
+            <div class="TopBox MenuTitleContainer">
+                <h2 class="MenuTitle">Informasjon</h2>
+            </div>
+
+			<div class="MiddleBox">
+				  <ul class="Level-1 clearfix DisableAutoHeight">
+
+							  <li class="FirstItemInRow TopAlignedImage" style="width:100%;margin-right:0%;">
+									  <a class="Name" href="/informasjon/vedlikehold-av-psm-pulverfyllingsmaskiner" title="Vedlikehold av PSM-pulverfyllingsmaskiner">Vedlikehold av PSM-pulverfyllingsmaskiner</a>
+	  
+	  
+	  
+							  </li>
+							  <li class="TopAlignedImage Selected" style="width:100%;margin-right:0%;">
+									  <a class="Name" href="/informasjon/kontroll-av-brannslukningsapparat-hvor-ofte" title="Kontroll av brannslukningsapparat – hvor ofte?">Kontroll av brannslukningsapparat – hvor ofte?</a>
+	  
+	  
+	  
+							  </li>
+							  <li class="TopAlignedImage" style="width:100%;margin-right:0%;">
+									  <a class="Name" href="/informasjon/hvordan-bruke-en-brannslukker-1" title="Hvordan bruke en brannslukker">Hvordan bruke en brannslukker</a>
+	  
+	  
+	  
+							  </li>
+							  <li class="TopAlignedImage" style="width:100%;margin-right:0%;">
+									  <a class="Name" href="/informasjon/pulverapparat-innhold-og-helse" title="Pulverapparat - Innhold og helse">Pulverapparat - Innhold og helse</a>
+	  
+	  
+	  
+							  </li>
+							  <li class="TopAlignedImage" style="width:100%;margin-right:0%;">
+									  <a class="Name" href="/industrivernutstyr" title="Industrivernutstyr">Industrivernutstyr</a>
+	  
+	  
+	  
+							  </li>
+							  <li class="TopAlignedImage" style="width:100%;margin-right:0%;">
+									  <a class="Name" href="/informasjon/kontroll-vedlikehold-og-service-av-brannutstyr" title="Kontroll, vedlikehold og service av brannutstyr">Kontroll, vedlikehold og service av brannutstyr</a>
+	  
+	  
+	  
+							  </li>
+							  <li class="TopAlignedImage" style="width:100%;margin-right:0%;">
+									  <a class="Name" href="/krav-til-roykvarsler-og-manuelt-slokkeutstyr-i-bolig" title="Krav til r&#248;ykvarsler og manuelt slokkeutstyr i bolig">Krav til r&#248;ykvarsler og manuelt slokkeutstyr i bolig</a>
+	  
+	  
+	  
+							  </li>
+							  <li class="TopAlignedImage" style="width:100%;margin-right:0%;">
+									  <a class="Name" href="/informasjon/roykvarsler" title="R&#248;ykvarsler">R&#248;ykvarsler</a>
+	  
+	  
+	  
+							  </li>
+							  <li class="TopAlignedImage" style="width:100%;margin-right:0%;">
+									  <a class="Name" href="/slokkemidler" title="Slokkemidler">Slokkemidler</a>
+	  
+	  
+	  
+							  </li>
+							  <li class="LastItemInRow TopAlignedImage" style="width:100%;">
+									  <a class="Name" href="/brannslukker-effektivitetsklasser-og-krav" title="Brannslukker - Effektivitetsklasser og krav">Brannslukker - Effektivitetsklasser og krav</a>
+	  
+	  
+	  
+							  </li>
+				</ul>
+			</div>
+
+
+    <div class="PagerContainer clearfix">
+			<div class="PagerButtonsContainer clearfix">
+				<div class="BackButtons">
+				</div>
+				<div class="ForwardButtons">
+					<a href="/informasjon/kontroll-av-brannslukningsapparat-hvor-ofte?page=2">&gt;</a>
+					<a href="/informasjon/kontroll-av-brannslukningsapparat-hvor-ofte?page=2">&gt;&gt;</a>
+				</div>
+			</div>
+			<div class="PagerNumbersContainer">
+						<span class="PageNumber">1</span>
+						<a class="PageNumber" href="/informasjon/kontroll-av-brannslukningsapparat-hvor-ofte?page=2">2</a>
+				<!--<span class="PagerOf">av</span>-->
+			</div>
+            <div class="PagerShowAll clearfix">
+				<a href="/informasjon/kontroll-av-brannslukningsapparat-hvor-ofte?page=all">
+					Vis alle 
+					(2)
+				</a>
+			</div>
+
+    </div>
+    </div>
+
+	</div>
+	<div class="PageColumn Second ControlsList">
+		<div class="row"><input type="hidden" name="ctl03$UC171$hControlID" id="ctl03_UC171_hControlID" value="171" />
+<div id="ctl03_UC171_documentViewMainContainer" data-domain="document" data-itemid="5401">
+    <div class="DocView UC171 clearfix LeftAlignedImage">
+            <div class="MainTitleContainer clearfix">
+                    <h1 class="MainTitle ViewMainTitle UC171MainTitle" >Kontroll av brannslukningsapparat – hvor ofte?</h1>
+                                            </div>
+                        <div class="ImageWithRelated  clearfix">
+
+                    <div class="ImageContainer UC171ImageContainer">
+                            <a href="/image/alfa-brannvern/informasjon/kontroll-av-brannslukningsapparat-hvor-ofte.png?v=639238800368230000" rel="lightbox_UC171" title="Kontroll av brannslukningsapparat - Hvor ofte.png" class="ImageLink UC171ImageLink">
+                            <img src="/image/alfa-brannvern/informasjon/kontroll-av-brannslukningsapparat-hvor-ofte.png?width=400&amp;crop=none&amp;v=639238800368230000" alt="Kontroll av brannslukningsapparat - Hvor ofte.png" class="Image UC171Image"  />
+                            </a>
+                    </div>
+                                            <div class="Snippet UC171Snippet clearfix"><!-- AddThis Button BEGIN -->
+<div class="addthis_toolbox addthis_default_style standardplus">
+<a class="addthis_button_facebook_like" fb:like:action="recommend" fb:like:width="125"></a>
+<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+<a class="addthis_button_tweet"></a>
+<a class="addthis_button_email"></a>
+<script>
+    var addthis_config = {
+        ui_language: "no",
+        ui_use_css : false,
+        pubid: "xa-526a821e54a91b14",
+        data_track_addressbar: false,
+        data_track_clickback: false
+    };
+    var addthisScript = document.createElement('script');
+    addthisScript.src ='http://s7.addthis.com/js/300/addthis_widget.js#domready=1';
+    document.body.appendChild(addthisScript);
+</script>
+</div>
+<!-- AddThis Button END -->
+</div>
+                </div>
+                <div class="TeaserContainer UC171TeaserContainer">
+                        <div class="Teaser UC171Teaser clearfix" ><p class="PDq2pG_selectionAnchorContainer" data-start="82" data-end="139"><strong data-start="82" data-end="139">Hvor ofte skal et brannslukningsapparat kontrolleres?<br /><br /></strong><span aria-hidden="true" class="PDq2pG_selectionAnchor"></span>Brannslukningsapparater m&aring; kontrolleres og vedlikeholdes for &aring; sikre at de fungerer n&aring;r det virkelig gjelder. Hvor ofte apparatet skal kontrolleres og ha service, avhenger blant annet av hvor det er plassert, hvilken type slokkemiddel det inneholder og bruken av bygget.<br /><br />Her forklarer vi forskjellen mellom egenkontroll, faglig kontroll og service p&aring; brannslukningsapparater, og hvilke intervaller som gjelder etter <strong data-start="564" data-end="580">NS 3910:2020</strong>.</p></div>
+                                                                                    <div class="Content UC171Content clearfix"  ><p class="PDq2pG_selectionAnchorContainer" data-start="198" data-end="255"><strong data-start="198" data-end="255">Hvor ofte skal et brannslukningsapparat kontrolleres?<br /><br /></strong>For h&aring;ndslokkere i n&aelig;ringsbygg og andre plasseringer utenom bolig utf&oslash;res det normalt kontroll <strong data-start="352" data-end="370">&eacute;n gang per &aring;r</strong>. Kontrollen skal avdekke om apparatet er tilgjengelig, uskadd og i forskriftsmessig stand, og om det er behov for service eller andre tiltak.<br /><br />I boliger er det eierens ansvar &aring; s&oslash;rge for at slokkeutstyret blir kontrollert og vedlikeholdt etter leverand&oslash;rens anvisninger. Det er derfor viktig &aring; skille mellom den enkle kontrollen du selv kan gj&oslash;re og faglig kontroll og service utf&oslash;rt av kompetent personell.<br /><br /><strong data-start="780" data-end="862">Serviceintervallene varierer etter type brannslukningsapparat og slokkemiddel.</strong> Dette forklarer vi n&aelig;rmere nedenfor.<br /><br /><strong data-start="198" data-end="241">Egenkontroll &ndash; dette kan du sjekke selv<br /><br /></strong>Mellom de faglige kontrollene er det lurt &aring; kontrollere brannslukningsapparatet jevnlig. En enkel egenkontroll kan blant annet omfatte:</p>
+<ul data-start="380" data-end="761">
+<li data-section-id="16g7d94" data-start="380" data-end="439">at apparatet st&aring;r p&aring; riktig plass og er lett tilgjengelig</li>
+<li data-section-id="1vnk68v" data-start="440" data-end="484">at apparatet ikke er blokkert eller skjult</li>
+<li data-section-id="m2be6f" data-start="485" data-end="521">at plombering og sikring er intakt</li>
+<li data-section-id="1t0sjy9" data-start="522" data-end="575">at slange, dyse og beholder ikke har synlige skader</li>
+<li data-section-id="35pujs" data-start="576" data-end="646">at trykkindikatoren, dersom apparatet har dette, viser normalt trykk</li>
+<li data-section-id="1bwgkr7" data-start="647" data-end="695">at bruksanvisningen er lesbar og vender utover</li>
+<li data-section-id="1tu3qch" data-start="696" data-end="761">at apparatet ikke har synlig rust, korrosjon eller andre skader</li>
+</ul>
+<p data-start="763" data-end="885">Oppdager du skader, manglende trykk, brutt plombering eller andre feil, b&oslash;r apparatet kontrolleres av kompetent personell.<br /><strong data-start="701" data-end="747"><br /><br />Hva er forskjellen p&aring; kontroll og service?<br /><br /></strong>En kontroll er en gjennomgang av brannslukningsapparatet for &aring; kontrollere at det er i tilfredsstillende stand og klart til bruk. Det kontrolleres blant annet plassering og tilgjengelighet, merking, plombering, trykkindikator der dette finnes, samt apparatets generelle tilstand.<br /><br />Service er et mer omfattende vedlikehold av apparatet. Hva som skal utf&oslash;res ved service avhenger blant annet av type apparat, slokkemiddel, alder og produsentens anvisninger.<br /><br />Kontroll og service skal utf&oslash;res og dokumenteres i samsvar med <strong data-start="1269" data-end="1285">NS 3910:2020</strong> av personell og virksomheter med n&oslash;dvendig kompetanse.<br /><br /><br /><strong data-start="223" data-end="293">Hvor ofte skal brannslukningsapparatet kontrolleres og ha service?</strong></p>
+<p data-start="295" data-end="406">For brannslukningsapparater i private boliger avhenger vedlikeholdsintervallet av type apparat og slokkemiddel.</p>
+<p data-start="408" data-end="425"><strong data-start="408" data-end="425">Pulverapparat</strong></p>
+<ul data-start="426" data-end="484">
+<li data-section-id="1ya5c2i" data-start="426" data-end="452">Kontroll hvert <strong data-start="443" data-end="452">5. &aring;r</strong></li>
+<li data-section-id="175o3yb" data-start="453" data-end="484">Full service hvert <strong data-start="474" data-end="484">10. &aring;r</strong></li>
+</ul>
+<p data-start="486" data-end="510"><strong data-start="486" data-end="510">Skum- og vannapparat</strong></p>
+<ul data-start="511" data-end="581">
+<li data-section-id="1vm3yv6" data-start="511" data-end="581">Full service hvert <strong data-start="532" data-end="541">5. &aring;r</strong>. Kontroll og service er sammenfallende.</li>
+</ul>
+<p data-start="583" data-end="832">I tillegg b&oslash;r eieren selv utf&oslash;re regelmessig ettersyn av apparatet. RVB anbefaler ettersyn hvert halv&aring;r for &aring; kontrollere blant annet tilgjengelighet, plombering, trykkindikator og apparatets generelle tilstand.</p>
+<p data-start="834" data-end="963">For h&aring;ndslokkere i n&aelig;ringsbygg og andre plasseringer gjelder andre kontrollintervaller, og apparatene kontrolleres normalt &aring;rlig.<br /><br /><br /><strong data-start="545" data-end="560">CO₂-apparat</strong></p>
+<p data-start="562" data-end="805">CO₂-apparater skal kontrolleres og vedlikeholdes i henhold til NS 3910:2020. I tillegg omfattes CO₂-beholderen av krav til periodisk kontroll av trykkbeholdere. CO₂-gassflasker skal som hovedregel gjennomg&aring; periodisk kontroll hvert <strong data-start="794" data-end="804">10. &aring;r</strong>.</p>
+<p data-start="807" data-end="977">Ved kontroll av CO₂-apparater er blant annet apparatets vekt viktig, siden CO₂-apparater normalt ikke har trykkindikator som viser om apparatet har riktig fyllingsmengde.<br /><br /><br /><strong data-start="109" data-end="168">&Aring;rlig kontroll av brannslukningsapparater i n&aelig;ringsbygg<br /><br /></strong>I n&aelig;ringsbygg, offentlige bygg, borettslag, sameier og andre virksomheter skal h&aring;ndslokkere f&oslash;lges opp systematisk som en del av byggets brannsikkerhet. H&aring;ndslokkere utenfor private boliger kontrolleres normalt <strong data-start="381" data-end="399">&eacute;n gang per &aring;r</strong> i henhold til NS 3910:2020.<br /><br />Ved kontroll gjennomg&aring;s blant annet apparatets plassering, tilgjengelighet, merking, plombering, trykk, slange og &oslash;vrige komponenter. Det kontrolleres ogs&aring; om apparatet har skader, korrosjon eller andre forhold som kan p&aring;virke funksjonen.<br /><br />Utf&oslash;rt kontroll dokumenteres, og apparatet merkes slik at det fremg&aring;r n&aring;r kontrollen er gjennomf&oslash;rt. Dersom det oppdages feil eller apparatet har n&aring;dd sitt serviceintervall, utf&oslash;res n&oslash;dvendig service eller apparatet skiftes ut.<br /><br /><br /><strong data-start="243" data-end="308">Trenger du kontroll eller service av brannslukningsapparater?<br /><br /></strong>Alfa Brannvern AS utf&oslash;rer <a href="/informasjon/kontroll-vedlikehold-og-service-av-brannutstyr">kontroll, service og vedlikehold av brannslukningsapparater</a> for bedrifter, borettslag, sameier og andre virksomheter. Vi utf&oslash;rer ogs&aring; service og vedlikehold av h&aring;ndslokkere for privatkunder.<br /><br />Vi kontrollerer apparatene, dokumenterer utf&oslash;rt vedlikehold og utf&oslash;rer n&oslash;dvendig service n&aring;r apparatene har n&aring;dd serviceintervallet eller det avdekkes feil.<br /><br />Har du sp&oslash;rsm&aring;l om n&aring;r brannslukningsapparatene dine skal kontrolleres eller ha service, er du velkommen til &aring; kontakte <strong data-start="806" data-end="827">Alfa Brannvern AS</strong>.</p></div>
+                </div>
+                                    </div>
+</div>
+<div></div>
+
+<div class="cta-buttons">
+    
+    
+    
+    
+</div>
+
+</div>
+        <div class="row d-c2 m-c1 clearfix UC175_landscapeimage">
+
+
+</div>
+        
+	</div>
+</div>
+	</div>
+        
+</div>
+        <footer id="footer" class="footer bg-pattern">
+            <div class="holder clearfix">
+                <div id="tailTrust" class="trustline clearfix spaceb-1">
+                    <div class="List TrustOptions pull-left">
+                        <ul>
+<li>GOD SERVICE</li>
+<li>RASK LEVERING</li>
+<li>H&Oslash;YKVALITETS PRODUKTER</li>
+</ul>
+                    </div>
+                    <ul class="List pull-right Contentl-inline m-pull-left">
+                        <li class="PhoneInfo">
+                           <span class="callus"> RING OSS:</span><a class="phonenumber" href="tel:40489644">40 48 96 44</a>
+                        </li>
+                        <li class="PaymentMethods">
+                            
+
+    <div class="LinkImageList UC188" id="cid188_pcd0">
+            <div class="ListContainer">
+<div class="DataItemsRow Item n1">
+                        <div class="ImageContainer">
+                                <img loading="lazy" src="/image/systembilder/site-footer-payment-icons/klarna_paymentbadge_outsidecheckout_pink.png?v=637804373550970000" class="Image"  alt="Klarna_PaymentBadge_OutsideCheckout_Pink.png"   />
+                        </div>
+
+
+
+                        
+                     </div><div class="DataItemsRow Item n2">
+                        <div class="ImageContainer">
+                                <img loading="lazy" src="/image/systembilder/site-footer-payment-icons/vipps-rgb-orange-pos_no_frame.png?v=637804373566500000" class="Image"  alt="vipps-rgb-orange-pos_no_frame.png"   />
+                        </div>
+
+
+
+                        
+                     </div><div class="DataItemsRow Item n3">
+                        <div class="ImageContainer">
+                                <img loading="lazy" src="/image/systembilder/site-footer-payment-icons/visa_logo.png?v=637804373569030000" class="Image"  alt="visa_logo.png"   />
+                        </div>
+
+
+
+                        
+                     </div><div class="DataItemsRow Item n4">
+                        <div class="ImageContainer">
+                                <img loading="lazy" src="/image/systembilder/site-footer-payment-icons/mc_symbol.png?v=637804373556970000" class="Image"  alt="mc_symbol.png"   />
+                        </div>
+
+
+
+                        
+                     </div>            </div>
+    </div>
+
+                        </li>
+                    </ul>
+                </div>
+                <div class="cols-4 m-jump">
+                    <div class="docAbout">
+                        <h3>Sosiale medier</h3>
+                        <p>Her finner du v&aring;re sider p&aring; sosiale medier og epostadresse under. Vi h&aring;per du vil&nbsp;"like" oss p&aring; facebook for &aring; holde deg oppdatert og motta informasjon og tilbud. <br /><br />Takk!</p>
+                    </div>
+                    <div class="TailSocialIcons">
+                        <div class="addthis_toolbox custom horizontal">
+                            <a class="addthis_button_facebook"><i class="un-facebook"></i></a>
+                            <a class="addthis_button_twitter"><i class="un-twitter"></i></a>
+                            <a class="addthis_button_email"><i class="un-envelope"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="cols-6 m-hide center">
+                    <div class="docContent"><p>&Aring;pningstider er alle hverdager <span style="color: #ffffff;">08.00-16.00</span> <br />Supporttjenesten er &aring;pen alle hverdager <span style="color: #ffffff;">08.00-12.00</span> og <span style="color: #ffffff;">13.00-16.00</span><br /><br />Alfa Brannvern AS&nbsp;<br />Adresse:&nbsp;Strandveien 29&nbsp;<br />Postnr/Sted: <span style="color: #ffffff;">3050 Mj&oslash;ndalen</span> <br />Tel: <a style="color: #ffffff;" href="tel:40489644">40 48 96 44</a><br />Veibeskrivelse: Se <a href="https://www.google.com/maps/place/Alfa+Brannvern+AS/@59.7513615,10.0176955,17z/data=!3m1!4b1!4m5!3m4!1s0x46412137534fc8b9:0xd15d5798a52b8e85!8m2!3d59.7513615!4d10.0198843">kart.</a> Her er ogs&aring; en tjeneste der du kan lage kj&oslash;rerute, da f&aring;r du ferdig kart for turen din til oss.</p></div>
+                </div>
+                <div class="cols-2 m-hide">
+                    <h3>Sidemeny</h3>
+                    
+
+    <div class="SiteMenuFooterDesktop Menu SiteMenu Vertical NotExpandable">
+        <ul class="MiddleBox Level-1 clearfix">
+                <li class="Item-1 Page NoToggle">
+
+
+        
+
+        <a href="/" class="Name" >Hjem</a>
+        
+    </li>
+    <li class="Item-2 Page Expandable">
+
+
+            <a href="/produkter" class="Toggle"  aria-label="&#197;pne/lukke undermeny"></a>
+        
+
+        <a href="/produkter" class="Name" >Produkter</a>
+        
+    </li>
+    <li class="Item-3 Page NoToggle">
+
+
+        
+
+        <a href="/tjenester" class="Name" >Tjenester</a>
+        
+    </li>
+    <li class="Item-4 Page NoToggle Selected">
+
+
+        
+
+        <a href="/informasjon" class="Name" >Informasjon</a>
+        
+    </li>
+    <li class="Item-5 Page NoToggle">
+
+
+        
+
+        <a href="/betingelser" class="Name" >Betingelser</a>
+        
+    </li>
+    <li class="Item-6 Page NoToggle">
+
+
+        
+
+        <a href="/om-oss" class="Name" >Om oss</a>
+        
+    </li>
+    <li class="Item-7 Page NoToggle">
+
+
+        
+
+        <a href="/kontakt" class="Name" >Kontakt</a>
+        
+    </li>
+
+        </ul>
+    </div>
+
+                </div>
+                <div class="copyright row">
+                    <span class="copyright__credits">&copy; 2026 | Alfa Brannvern AS | Telefon: Tel: +47 40 48 96 44 | E-post: post@alfabrannvern.no  </span>
+                    <span class="copyright__by">
+                        <a href="https://www.unimicroweb.no" title="Uni Micro Web" target="_blank">Uni Micro Web</a>
+                    </span>
+                </div>
+
+            </div>
+        </footer>
+    </div>
+    <div id="ParalaxWallpaper" class="hide">
+
+</div>
+    <!--#root-->
+	<!-- disabled light/dark mobileonly -->
+	<div class="scrollToTop disabled dark mobileonly">
+		<div class="button">&uarr;</div>
+	</div>
+
+<div class="aspNetHidden">
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="CA0B0334" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="6P+dBSUDydizRElk+fn2+gjIr8jPggnA5ByFZCxFaq0YpjE/Xag1twQbtfjfCxiwx8PUFW+JI3ez9jPIsl74+Zljo7I7oHdYM8a8rmzZlkqRHT6aontME3H23gvhJTPEuuY7WmB8tVadn6jfLDvmClue2huataFj9yQqekpLIxXAg8K5ppUexWjbgGLHjui2NnqDm+ciTiuX3r7t8nIE8QzaQn8=" />
+</div></form>
+<!-- Scripts used for style adjustment -->
+<script type="text/javascript" src="/templates/plugins/mnsitebar/js/MobileNavigationSidebar.js?v=1.0" async></script>
+<script type="text/javascript" src="/templates/js/bootstrap3.3.7.min.js"></script>
+<script type="text/javascript" src="/theme/plugins/slider-slick/slick.min.js"></script>
+<script type="text/javascript" src="/theme/js/scripts.js?v=09.02.2023"></script>
+
+<script type="text/javascript" src="https://cdn.klarna.com/1.0/code/client/all.js"></script>
+
+    <script type="text/javascript">function getAssetsByKeys(a,ks){const r=[];for(const k of ks){if(Object.prototype.hasOwnProperty.call(a,k)){for(let v of a[k]){r.push(v);}}}return r;}
+(function(w) {{
+if (typeof w.umwAssets === 'undefined') {{ w.umwAssets = []; }}
+w.umwAssets['~/Parts/Views/Menu/Menu/Menu.min.js'] = [{"controlId":"productMenuMobile","expandable":true},{"controlId":"siteMenuMobile","expandable":false},{"controlId":"SiteMenuDesktop","expandable":false},{"controlId":"SiteMenuFooterDesktop","expandable":false}];
+w.umwAssets['~/Parts/Views/Site/SiteCart.min.js'] = [{"mainPanelID":"newSiteCart_SiteCartMainPanel","popupTemplate":"\u003c% var cssPrefix = \u0022site-cart-popup\u0022; %\u003e\r\n\r\n\u003c% if (data.products \u0026\u0026 data.products.length \u003e 0) { %\u003e\r\n\r\n    \u003c% if (freeShippingSettings \u0026\u0026 data.freeShippingInfo \u0026\u0026 data.freeShippingInfo.showNotification) { %\u003e\r\n        \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e__free-shipping \u003c%- cssPrefix %\u003e-free-shipping \u003c%- cssPrefix %\u003e-free-shipping_\u003c%= data.freeShippingInfo.freeShippingRemainder \u003e 0 ? \u0022remained\u0022 : \u0022reached\u0022 %\u003e\u0022\u003e\r\n            \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-free-shipping__progress progress\u0022\u003e\r\n                \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-free-shipping__progress-bar progress-bar\u0022 role=\u0022progressbar\u0022 aria-valuenow=\u0022\u003c%= data.freeShippingInfo.progress * 100 %\u003e\u0022 aria-valuemin=\u00220\u0022 aria-valuemax=\u0022100\u0022 style=\u0022width: \u003c%= data.freeShippingInfo.progress * 100 + \u0027%\u0027 %\u003e;\u0022\u003e\u003c/div\u003e\r\n            \u003c/div\u003e\r\n            \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-free-shipping__message\u0022\u003e\u003c%= data.freeShippingInfo.freeShippingRemainder \u003e 0 ? freeShippingSettings.freeShippingMessage.replace(\u0027{0}\u0027, data.freeShippingInfo.freeShippingRemainderStr) : freeShippingSettings.freeShippingReacedMessage %\u003e\u003c/div\u003e\r\n        \u003c/div\u003e\r\n    \u003c% } %\u003e\r\n\r\n    \u003c% if (settings.showExportToExcel) { %\u003e\r\n        \u003cbutton type=\u0022button\u0022 class=\u0022\u003c%- cssPrefix %\u003e__button \u003c%- cssPrefix %\u003e__export-to-excel js-site-cart-popup-export-to-excel\u0022\u003e\u003c%- labels.exportToExcel %\u003e\u003c/button\u003e\r\n    \u003c% } %\u003e\r\n    \u003c% if (settings.showBonusBalance) { %\u003e\r\n        \u003cdiv class=\u0022js-bonus-balance-init\u0022\u003e\u003c/div\u003e\r\n    \u003c% } %\u003e\r\n    \u003cbutton type=\u0022button\u0022 class=\u0022\u003c%- cssPrefix %\u003e__button \u003c%- cssPrefix %\u003e__go-to-shopcart js-site-cart-popup-go-to-shopcart\u0022\u003e\u003c%- labels.goToShopcart %\u003e\u003c/button\u003e\r\n    \u003c% if (settings.enableVippsHurtigkasse) { %\u003e\r\n    \u003cdiv style=\u0022padding: 10px 0; text-align: center;\u0022\u003e\u003cvipps-hurtigkasse lang=\u0022\u003c%= settings.languageId %\u003e\u0022 btn-shape=\u0022Pill250\u0022\u003e\u003c/vipps-hurtigkasse\u003e\u003c/div\u003e\r\n    \u003c% } %\u003e\r\n    \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e__items\u0022\u003e\r\n        \u003c% _.each(data.products, function(item, idx) {\r\n        var imageWidthAttr = item.imageDisplayWidth ? \u0027width=\u0022\u0027 + item.imageDisplayWidth + \u0027\u0022\u0027 : \u0027\u0027;\r\n        var imageHeightAttr = item.imageDisplayHeight ? \u0027height=\u0022\u0027 + item.imageDisplayHeight + \u0027\u0022\u0027 : \u0027\u0027;\r\n        %\u003e\r\n        \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item js-site-cart-popup-item\u0022 data-itemid=\u0022\u003c%= item.itemID %\u003e\u0022 data-tolid=\u0022\u003c%= item.tempOrderLineID %\u003e\u0022 data-productid=\u0022\u003c%= item.productID %\u003e\u0022\u003e\r\n            \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__image-container\u0022\u003e\r\n                \u003ca class=\u0022\u003c%- cssPrefix %\u003e-item__image_product_link\u0022 href=\u0022\u003c%= window.R + item.productUrl %\u003e\u0022\u003e\r\n                    \u003cimg class=\u0022\u003c%- cssPrefix %\u003e-item__image img-responsive lazyload\u0022 data-src=\u0022\u003c%= window.R + item.imageUrl %\u003e\u0022 alt=\u0022\u003c%- item.productNo %\u003e\u0022 \u003c%= imageWidthAttr %\u003e \u003c%= imageHeightAttr %\u003e /\u003e\r\n                \u003c/a\u003e\r\n            \u003c/div\u003e\r\n            \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__details\u0022\u003e\r\n                \u003ch2 class=\u0022\u003c%- cssPrefix %\u003e-item__title\u0022\u003e\r\n                    \u003ca class=\u0022\u003c%- cssPrefix %\u003e-item__title_link\u0022 href=\u0022\u003c%= window.R + item.productUrl %\u003e\u0022\u003e\u003c%- item.productName %\u003e\u003c/a\u003e\r\n                \u003c/h2\u003e\r\n                \u003c% if (item.dimensions \u0026\u0026 item.dimensions.length \u003e 0) { %\u003e\r\n                \u003c% _.each(item.dimensions, function(dim, idx) { %\u003e\r\n                \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__row \u003c%- cssPrefix %\u003e-item__dim \u003c%- cssPrefix %\u003e-item__dim_\u003c%= idx+1 %\u003e\u0022\u003e\r\n                    \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__key \u003c%- cssPrefix %\u003e-item__dim-key\u0022 data-dimtypeid=\u0022\u003c%= dim.dimType.id %\u003e\u0022\u003e\u003c%- dim.dimType.name %\u003e:\u003c/div\u003e\r\n                    \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__value \u003c%- cssPrefix %\u003e-item__dim-value\u0022 data-dimid=\u0022\u003c%= dim.id %\u003e\u0022\u003e\u003c%- dim.name %\u003e\u003c/div\u003e\r\n                \u003c/div\u003e\r\n                \u003c% }); %\u003e\r\n                \u003c% } %\u003e\r\n                \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__row \u003c%- cssPrefix %\u003e-item__product-number-row\u0022\u003e\r\n                    \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__key \u003c%- cssPrefix %\u003e-item__product-number-key\u0022\u003e\u003c%- labels.productNo %\u003e:\u003c/div\u003e\r\n                    \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__value \u003c%- cssPrefix %\u003e-item__product-number-value\u0022\u003e\u003c%= item.productNo %\u003e\u003c/div\u003e\r\n                \u003c/div\u003e\r\n                \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__row \u003c%- cssPrefix %\u003e-item__quantity-row \u003c%- cssPrefix %\u003e-item__quantity-row_not-editable\u0022\u003e\r\n                    \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__key \u003c%- cssPrefix %\u003e-item__quantity-key\u0022\u003e\u003c%- labels.quantity %\u003e:\u003c/div\u003e\r\n                    \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__value \u003c%- cssPrefix %\u003e-item__quantity-value\u0022\u003e\u003c%= item.quantity %\u003e\u003c/div\u003e\r\n                \u003c/div\u003e\r\n                \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__row \u003c%- cssPrefix %\u003e-item__price-row\u0022\u003e\r\n                    \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__key \u003c%- cssPrefix %\u003e-item__price-key\u0022\u003e\u003c%- labels.price %\u003e:\u003c/div\u003e\r\n                    \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__value \u003c%- cssPrefix %\u003e-item__price-value\u0022\u003e\r\n                        \u003cspan class=\u0022\u003c%- cssPrefix %\u003e-item__price notranslate\u0022\u003e\u003c%= item.formattedPrice %\u003e\u003c/span\u003e\r\n                        \u003c% if (!settings.includeVAT) { %\u003e\r\n                        \u003cspan class=\u0022\u003c%- cssPrefix %\u003e-item__price_vat\u0022\u003e\u003c%- labels.exceptVAT %\u003e\u003c/span\u003e\r\n                        \u003c% } %\u003e\r\n                    \u003c/div\u003e\r\n                \u003c/div\u003e\r\n                \u003c% if (!item.cantBeRemoved) { %\u003e\r\n                \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-item__remove js-site-cart-popup-item-remove\u0022\u003e\u003c/div\u003e\r\n                \u003c% } %\u003e\r\n            \u003c/div\u003e\r\n        \u003c/div\u003e\r\n        \u003c% }); %\u003e\r\n    \u003c/div\u003e\r\n\r\n    \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-products-in-cart\u0022\u003e\r\n        \u003cspan class=\u0022\u003c%- cssPrefix %\u003e-products-in-cart__label\u0022\u003e\u003cspan class=\u0022\u003c%- cssPrefix %\u003e-products-in-cart__count\u0022\u003e\u003c%- data.summary.productCount %\u003e\u003c/span\u003e\u003c%- labels.title %\u003e\u003c/span\u003e\r\n        \u003ca href=\u0022#\u0022 class=\u0022\u003c%- cssPrefix %\u003e-products-in-cart__remove-all js-site-cart-popup-remove-all\u0022\u003e\u003c%- labels.removeAllItems %\u003e\u003c/a\u003e\r\n    \u003c/div\u003e\r\n\r\n    \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-summary\u0022\u003e\r\n        \u003c% if (settings.showPopupTotalVAT \u0026\u0026 settings.includeVatInTotals) { %\u003e\r\n            \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-summary__row \u003c%- cssPrefix %\u003e-summary__row_total-vat\u0022\u003e\r\n                \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-summary__key \u003c%- cssPrefix %\u003e-summary__key_total-vat\u0022\u003e\u003c%- labels.totalVAT %\u003e:\u003c/div\u003e\r\n                \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-summary__value \u003c%- cssPrefix %\u003e-summary__value_total-vat notranslate\u0022\u003e\u003c%- data.summary.formattedTotalVAT %\u003e\u003c/div\u003e\r\n            \u003c/div\u003e\r\n        \u003c% } %\u003e\r\n        \u003c% if (settings.showPopupTotalDiscount \u0026\u0026 data.summary.totalDiscount \u003e 0) { %\u003e\r\n            \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-summary__row \u003c%- cssPrefix %\u003e-summary__row_total-discount\u0022\u003e\r\n                \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-summary__key \u003c%- cssPrefix %\u003e-summary__key_total-discount\u0022\u003e\u003c%- labels.totalDiscount %\u003e:\u003c/div\u003e\r\n                \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-summary__value \u003c%- cssPrefix %\u003e-summary__value_total-discount notranslate\u0022\u003e\u003c%- data.summary.formattedTotalDiscount %\u003e\u003c/div\u003e\r\n            \u003c/div\u003e\r\n        \u003c% } %\u003e\r\n        \u003c% if (settings.showPopupTotalPrice) { %\u003e\r\n            \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-summary__row \u003c%- cssPrefix %\u003e-summary__row_total-price\u0022\u003e\r\n                \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-summary__key \u003c%- cssPrefix %\u003e-summary__key_total-price\u0022\u003e\u003c%- labels.totalPrice %\u003e:\u003c/div\u003e\r\n                \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e-summary__value \u003c%- cssPrefix %\u003e-summary__value_total-price\u0022\u003e\r\n                    \u003cspan class=\u0022\u003c%- cssPrefix %\u003e-summary__price notranslate\u0022\u003e\u003c%- data.summary.formattedTotalPrice %\u003e\u003c/span\u003e\r\n                    \u003c% if (!settings.includeVAT) { %\u003e\r\n                        \u003cspan class=\u0022\u003c%- cssPrefix %\u003e-summary__price_vat\u0022\u003e\u003c%- labels.exceptVAT %\u003e\u003c/span\u003e\r\n                    \u003c% } %\u003e\r\n                \u003c/div\u003e\r\n            \u003c/div\u003e\r\n\r\n        \u003c% } %\u003e\r\n    \u003c/div\u003e\r\n\r\n\u003c% } else { %\u003e\r\n\r\n    \u003cdiv class=\u0022\u003c%- cssPrefix %\u003e__empty-cart\u0022\u003e\u003c%- labels.emptyPopupTitle %\u003e\u003c/div\u003e\r\n\r\n\u003c% } %\u003e","isDefaultStylingApplied":false,"detailedCartInfoJSON":"{\u0022products\u0022:[],\u0022summary\u0022:{\u0022productCount\u0022:0.0,\u0022diffProductCount\u0022:0.0,\u0022totalPrice\u0022:0.0,\u0022totalPriceExclVat\u0022:0.0,\u0022totalVAT\u0022:0.0,\u0022totalDiscount\u0022:0.0,\u0022totalDiscountInclVat\u0022:0.0,\u0022formattedTotalPrice\u0022:\u0022kr 0,00\u0022,\u0022formattedTotalPriceExclVat\u0022:\u0022kr 0,00\u0022,\u0022formattedTotalVAT\u0022:\u0022kr 0,00\u0022,\u0022formattedTotalDiscount\u0022:\u0022kr 0,00\u0022,\u0022formattedTotalDiscountInclVat\u0022:\u0022kr 0,00\u0022,\u0022sumAboveMinimum\u0022:false}}","availableBonusPointsInfoJSON":null,"settings":{"includeVAT":true,"showPopup":false,"showExportToExcel":false,"showPopupTotalVAT":true,"showPopupTotalDiscount":true,"showPopupTotalPrice":true,"showPopupListTitle":true,"popupImageModification":"","isCustomerOutsideCountry":false,"includeVatInTotals":true,"showBonusBalance":true,"popupImageWidth":70,"enableVippsHurtigkasse":false,"languageId":3},"labels":{"popupTitle":"Handlekurv","title":"vare(r) i handlekurven","emptyPopupTitle":"Handlekurven er tom","continueShopping":"+ Handle mer","exportToExcel":"EKSPORTER TIL EXCEL","goToShopcart":"Gå til kassen","totalVAT":"Total MVA","totalDiscount":"Total rabatt","totalPrice":"Total pris","exceptVAT":"Eks. MVA","quantity":"Antall","productNo":"Produktnr.","price":"Pris","removeAllItems":"Fjern alle"},"urls":{"exportExcelUrl":null,"shopCartUrl":"/handlekurv"}}];
+w.umwAssets['~/Parts/Views/Site/SmartSearch.min.js'] = [{"mainPanelId":"SmartSearch_SmartSearch","templateContent":"\u003c% if(ctx.type === \u0027prod\u0027) { %\u003e\r\n\u003cdiv class=\u0022smart-search-suggestion smart-search-suggestion_product \u003c% if(ctx.isAvailable \u0026\u0026 settings.showBuyButton \u0026\u0026 (ctx.factor \u003c= 0 || ctx.factor == 1)) { print(\u0027smart-search-suggestion_allow-buy\u0027) } else { print(\u0027smart-search-suggestion_read-more\u0027) } %\u003e \u003c% if(ctx.isAvailable) { print(\u0027smart-search-suggestion_available-to-buy\u0027) } else { print(\u0027smart-search-suggestion_not-available-to-buy\u0027) } %\u003e \u003c% if(ctx.qtyInCart) { print(\u0027smart-search-suggestion_in-cart\u0027) } %\u003e\u003c% if(ctx.originalPrice != null) { print(\u0027has-discount\u0027) } %\u003e js-product-result\u0022 data-prodid=\u0022\u003c%= ctx.prodID %\u003e\u0022 data-qty=\u0022\u003c%= ctx.minQty ? ctx.minQty : 1 %\u003e\u0022\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__image-container\u0022\u003e\r\n        \u003cimg loading=\u0022lazy\u0022 src=\u0022\u003c%= ctx.imageUrl %\u003e\u0022\u003e\r\n        \u003c% if(ctx.qtyInCart) { %\u003e\r\n        \u003ci class=\u0022smart-search-suggestion__fa-shopping-cart fa fa-shopping-cart\u0022 aria-hidden=\u0022true\u0022\u003e\u003c/i\u003e\r\n        \u003c% } %\u003e\r\n    \u003c/div\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__product-name\u0022\u003e\u003c%= ctx.title %\u003e\u003c/div\u003e\r\n    \u003c% if(settings.showUnit \u0026\u0026 ctx.unit) { %\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__unit-container\u0022\u003e\r\n        \u003cspan class=\u0022smart-search-suggestion__unit\u0022\u003e\u003c%= ctx.unit %\u003e\u003c/span\u003e\r\n    \u003c/div\u003e\r\n    \u003c% } %\u003e\r\n    \u003c% if(ctx.isAvailable \u0026\u0026 settings.showBuyButton \u0026\u0026 (ctx.factor \u003c= 0 || ctx.factor == 1)) { %\u003e\r\n    \u003cbutton type=\u0022button\u0022 class=\u0022smart-search-suggestion__buy-btn btn btn-primary btn-sm btn-buy btn-buy_smart-search\u0022\u003e\u003c%= labels.buy %\u003e\u003c/button\u003e\r\n    \u003c% } else { %\u003e\r\n    \u003ca href=\u0022\u003c%= ctx.prodUrl %\u003e\u0022 class=\u0022smart-search-suggestion__read-more-btn btn btn-primary btn-sm btn-read-more btn-read-more_smart-search js-product-link\u0022\u003e\u003c%= labels.readMore %\u003e\u003c/a\u003e\r\n    \u003c% } %\u003e\r\n    \u003c% if (settings.showOriginalPrice \u0026\u0026 ctx.originalPrice != null) { %\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__original-price-container\u0022\u003e\r\n        \u003cdiv class=\u0022smart-search-suggestion__original-price\u0022\u003e\u003c%= ctx.originalPrice %\u003e\u003c/div\u003e\r\n        \u003c% if (ctx.vatText) { %\u003e\r\n        \u003cdiv class=\u0022smart-search-suggestion__original-price-vat-text\u0022\u003e\u003c%= ctx.vatText %\u003e\u003c/div\u003e\r\n        \u003c% } %\u003e\r\n    \u003c/div\u003e\r\n    \u003c% } %\u003e\r\n    \u003c% if(settings.showPrice \u0026\u0026 ctx.price != null) { %\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__price\u0022\u003e\u003c%= ctx.price %\u003e\u003c/div\u003e\r\n    \u003c% if(ctx.vatText) { %\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__vat-text\u0022\u003e\u003c%= ctx.vatText %\u003e\u003c/div\u003e\r\n    \u003c% }} %\u003e\r\n    \u003c% if(settings.showComparablePrice \u0026\u0026 ctx.comparablePrice != null) { %\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__comparable-price-container\u0022\u003e\r\n        \u003cspan class=\u0022smart-search-suggestion__comparable-price\u0022\u003e\u003c%= ctx.comparablePrice %\u003e\u003c/span\u003e\u003c% if(ctx.comparableUnitText) { %\u003e\u003cspan class=\u0022smart-search-suggestion__comparable-unit-text\u0022\u003e\u003c%= ctx.comparableUnitText %\u003e\u003c/span\u003e\u003c% } %\u003e\r\n    \u003c/div\u003e\r\n    \u003c% } %\u003e\r\n    \u003c% if(ctx.isAvailable \u0026\u0026 settings.showBuyButton \u0026\u0026 (ctx.factor \u003c= 0 || ctx.factor == 1)) { %\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__minimal-quantity\u0022\u003e\u003c%= labels.quantity %\u003e: \u003c%= ctx.minQty ? ctx.minQty : 1 %\u003e\u003c/div\u003e\r\n    \u003c% } %\u003e\r\n\u003c/div\u003e\r\n\u003c% } else if(ctx.type === \u0027document\u0027) { %\u003e\r\n\u003cdiv class=\u0022smart-search-suggestion smart-search-suggestion_document\u0022\u003e\r\n    \u003c% if(ctx.categoryName) { %\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__category-name\u0022\u003e\u003c%= ctx.categoryName %\u003e\u003c/div\u003e\r\n    \u003c% } %\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__image-container\u0022\u003e\r\n        \u003cimg loading=\u0022lazy\u0022 src=\u0022\u003c%= ctx.imageUrl %\u003e\u0022\u003e\r\n    \u003c/div\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__product-name\u0022\u003e\u003c%= ctx.title %\u003e\u003c/div\u003e\r\n    \u003ca href=\u0022\u003c%= ctx.documentUrl %\u003e\u0022 class=\u0022smart-search-suggestion__read-more-btn btn btn-primary btn-sm btn-read-more btn-read-more_smart-search\u0022\u003e\u003c%= labels.readMore %\u003e\u003c/a\u003e\r\n\u003c/div\u003e\r\n\u003c% } else if(ctx.type === \u0027event\u0027) { %\u003e\r\n\u003cdiv class=\u0022smart-search-suggestion smart-search-suggestion_event\u0022\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__image-container\u0022\u003e\r\n        \u003cimg loading=\u0022lazy\u0022 src=\u0022\u003c%= ctx.imageUrl %\u003e\u0022\u003e\r\n    \u003c/div\u003e\r\n    \u003cdiv class=\u0022smart-search-suggestion__product-name\u0022\u003e\u003c%= ctx.title %\u003e\u003c/div\u003e\r\n    \u003ca href=\u0022\u003c%= ctx.eventUrl %\u003e\u0022 class=\u0022smart-search-suggestion__read-more-btn btn btn-primary btn-sm btn-read-more btn-read-more_smart-search\u0022\u003e\u003c%= labels.readMore %\u003e\u003c/a\u003e\r\n\u003c/div\u003e\r\n\u003c% } else if(ctx.type === \u0027remainder\u0027) { %\u003e\r\n\u003cdiv class=\u0022smart-search-suggestion smart-search-suggestion_view-more\u0022\u003e\r\n    \u003ca href=\u0022\u003c%= searchUrl + ctx._query %\u003e\u0022\u003e\u003c%= labels.moreResults %\u003e (\u003c%= ctx.value %\u003e)\u003c/a\u003e\r\n\u003c/div\u003e\r\n\u003c% } %\u003e","labels":{"search":"Søk","buy":"Kjøp","readMore":"Les mer","moreResults":"Se flere søkeresultat","quantity":"Antall","smartSearch":"Smart søk","noItemsFound":"Ingen tilgjengelige elementer funnet","showMore":"Vis flere","showLess":"Vis færre","clear":"Nullstill"},"settings":{"resultsCount":5,"minTermLength":3,"searchUrl":"sok?s=","types":"1,20,41","rootPages":null,"rootFolders":null,"rootCategories":null,"showPrice":true,"showOriginalPrice":false,"showBuyButton":true,"imageWidth":50,"imageMod":"pad=true","showComparablePrice":false,"showUnit":false,"documentCategoriesRoot":null}}];
+}})(window);</script>
+
+<script type="text/javascript" src="/js/gtm/utils.min.js?v=21.25.2"></script>
+<script type="text/javascript" src="/js/gtm/ga4/cart.min.js?v=21.25.2"></script>
+<script type="text/javascript" src="/js/gtm/eec/cart.min.js?v=21.25.2"></script>
+<script type="text/javascript" src="/js/gtm/ga4/shopping_list.min.js?v=21.25.2"></script>
+<script type="text/javascript" src="/js/gtm/ga4/product_list.min.js?v=21.25.2"></script>
+<script type="text/javascript" src="/js/gtm/eec/product_list.min.js?v=21.25.2"></script>
+<script type="text/javascript" src="/js/gtm/ga4/search.min.js?v=21.25.2"></script>
+<script type="module" src="/components/website/cookie-consent/cookie-consent-dialog.js"></script>
+<cookie-consent-dialog styles="true"></cookie-consent-dialog>
+<script type="text/javascript" src="/js/umw.tabbuilder.js?v=21.25.2"></script>
+
+<script type="text/javascript" src="/Parts/Views/Menu/Menu/Menu.min.js?v=21.25.2"></script>
+<script type="text/javascript" src="/Parts/Views/Site/SiteCart.min.js?v=21.25.2"></script>
+<script type="text/javascript" src="/Parts/Views/Site/SmartSearch.min.js?v=21.25.2"></script>
+<script type="text/javascript" src="/Controls/Toolbox/CTAButtons/CTAButtonsPanel.min.js?v=21.25.2"></script>
+</body>
+</html>
