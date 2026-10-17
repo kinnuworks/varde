@@ -62,10 +62,10 @@ SOCIAL_HOSTS = {
 }
 SOCIAL_BAD = re.compile(r"(sharer|share\.php|/share|intent/|/dialog/|/plugins/|/hashtag/|/search|/watch\?|"
                         r"/embed|/p/|/reel/|/status/|/posts/|/photos?/|/events?/|/groups?/|/login|/help|/policy|"
-                        r"/privacy|/legal|/terms|/about/|/home\b|/tr\b|/l\.php|/permalink|story\.php)", re.I)
+                        r"/privacy|/legal|/terms|/about/|/home\b|/tr\b|/l\.php|/permalink|story\.php|^/pin\b|/pin/)", re.I)
 SOCIAL_GENERIC = {"facebook", "instagram", "linkedin", "twitter", "youtube", "tiktok", "wix", "squarespace",
                   "wordpress", "shopify", "home", "company", "pages", "profile.php", "people", "in", "user", "c",
-                  "channel", "share", "sharer", "x", "intent", "watch", "explore", "accounts", "groups"}
+                  "channel", "share", "sharer", "x", "intent", "watch", "explore", "accounts", "groups", "pin", "pins"}
 ATS = re.compile(r"(teamtailor\.com|webcruiter\.(no|com)|jobbnorge\.no|recman\.(no|io)|hrmanager\.no|"
                  r"easycruit\.com|reachmee\.com|jobylon\.com|varbi\.com|workable\.com|lever\.co|"
                  r"greenhouse\.io|smartrecruiters\.com|recruitee\.com|talentech\.com|jobbsafari\.no)", re.I)
@@ -406,6 +406,21 @@ def _reads_like_prose(text: str) -> bool:
     return caps / len(words) < 0.5
 
 
+def handle_matches(handle: str, legal: str, site_dom: str) -> bool:
+    """A social handle must carry a distinctive part of the company's name or website domain."""
+    last = handle.split("/")[-1].lstrip("@")
+    if last.startswith("profile.php?id=") or re.fullmatch(r"\d{8,}", last) or \
+            (handle.startswith("youtube.com/channel/") and re.fullmatch(r"uc[\w-]{20,}", last.lower())):
+        return True  # opaque platform ids carry no name to compare
+    base = ascii_slug(last)
+    label = ascii_slug(site_dom.split(".")[0])
+    tokens = [ascii_slug(w) for w in core_name(legal).split() if len(ascii_slug(w)) >= 3]
+    tokens = [t for t in tokens if t not in ("holding", "norge", "norway", "gruppen", "group", "as", "og")]
+    if label and len(label) >= 3 and (label in base or base in label):
+        return True
+    return any(t in base for t in tokens)
+
+
 def _jsonld(pv: PageView) -> list[dict]:
     out = []
     for node in pv.tree.css('script[type="application/ld+json"]'):
@@ -504,7 +519,7 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
         if len(by_platform[platform]) > 2:
             continue  # many accounts on one platform usually means a directory or partner list
         page = origin[handle]
-        if raw not in page.snap.text:
+        if raw not in page.snap.text or not handle_matches(handle, p.legal_name or "", site_dom):
             continue
         span = text_span(page.snap.text, raw, context=20) or raw
         original = unescape(raw) if raw.startswith("http") else "https://" + handle
@@ -627,7 +642,7 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
                 if title_txt and when and not STUB_NEWS.search(title_txt) and not re.search(r"[?&]p=1(?!\d)", block):
                     href = (link.group(1) or link.group(2) or "").strip() if link else ""
                     news.append((title_txt, when, fv, t.group(0), href or feed_link))
-                if len(news) >= 10:
+                if len(news) >= 20:
                     break
     if not news:
         for item in _jsonld(home):
@@ -642,7 +657,35 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
         if not tries:
             origin = "{0.scheme}://{0.netloc}".format(urlsplit(home.snap.final_url))
             tries = [origin + "/nyheter", origin + "/aktuelt"]
+        low_home = home.snap.text[:200_000].lower()
+        feed_tries = []
         for url in tries:
+            path = urlsplit(url).path.rstrip("/")
+            if "squarespace" in low_home:
+                feed_tries.append(url.rstrip("/") + "?format=rss")
+            if re.match(r"^/blogs/[^/]+$", path):
+                feed_tries.append(url.rstrip("/") + ".atom")
+        for furl in feed_tries[:1]:
+            fsnap = await f.get(furl, company=org)
+            if isinstance(fsnap, FetchError) or not re.search(r"<(rss|feed)\b", fsnap.text[:2000]):
+                continue
+            fv = PageView(fsnap, HTMLParser(""), fsnap.text)
+            for item in re.finditer(r"<(item|entry)\b.*?</\1>", fsnap.text, re.S | re.I):
+                block = item.group(0)
+                t = re.search(r"<title[^>]*>(.*?)</title>", block, re.S | re.I)
+                d = re.search(r"<(pubDate|published|updated|dc:date)[^>]*>(.*?)</\1>", block, re.S | re.I)
+                link = re.search(r"<link[^>]*>(.*?)</link>|<link[^>]*href=\"([^\"]+)\"", block, re.S | re.I)
+                if not t or not d:
+                    continue
+                title_txt = unescape(re.sub(r"<!\[CDATA\[|\]\]>|<[^>]+>", "", t.group(1))).strip()
+                when = _rss_date(d.group(2))
+                when = _date_ok(when, founded) if when else None
+                if title_txt and when and not STUB_NEWS.search(title_txt):
+                    href = ((link.group(1) or link.group(2) or "").strip() if link else "") or furl
+                    news.append((title_txt, when, fv, t.group(0), href))
+                if len(news) >= 20:
+                    break
+        for url in ([] if news else tries):
             snap = await f.get(url, company=org)
             if isinstance(snap, FetchError) or "html" not in (snap.content_type or "html"):
                 continue
@@ -657,7 +700,7 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
                 break
     news = _drop_bursts(news)
     seen_titles: set[str] = set()
-    for title_txt, when, pv, raw, href in sorted(news, key=lambda x: x[1], reverse=True)[:10]:
+    for title_txt, when, pv, raw, href in sorted(news, key=lambda x: x[1], reverse=True)[:20]:
         key = fold(title_txt)
         if key in seen_titles or raw not in pv.snap.text:
             continue
@@ -749,8 +792,8 @@ def _drop_bursts(items: list) -> list:
     keep = []
     for item in items:
         t = item[1]
-        close = sum(1 for u in times if u[:13] == t[:13])
-        if close >= 3 and len(t) > 10:
+        close = sum(1 for u in times if u[:16] == t[:16])
+        if close >= 4 and len(t) > 13:
             continue
         keep.append(item)
     return keep
