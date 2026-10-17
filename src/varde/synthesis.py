@@ -63,6 +63,11 @@ def validate(p: Profile, sentence: dict) -> bool:
     return True
 
 
+def core_name_eq(a: str, b: str) -> bool:
+    from .util import core_name
+    return core_name(a) == core_name(b)
+
+
 def _first(p: Profile, field: str) -> dict | None:
     items = p.published(field)
     return items[0] if items else None
@@ -90,6 +95,12 @@ def template(p: Profile) -> dict:
             text += f", founded {founded['value']}"
         add(text + ".", [name, form, addr if town else None, founded])
 
+    former = _first(p, "former_names")
+    if former and isinstance(former["value"], list):
+        names = [x for x in former["value"] if x.get("name") and x.get("to") and core_name_eq(x["name"], name["value"] if name else "") is False]
+        if names:
+            last = sorted(names, key=lambda x: x["to"])[-1]
+            add(f"It was previously named {last['name']} until {last['to'][:10]}.", [former])
     status = [c for c in p.published() if c["field"].startswith("status_") and c["value"] is True]
     for c in status:
         add(f"The register marks it as {c.get('label', '').lower()}.", [c])

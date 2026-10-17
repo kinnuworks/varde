@@ -44,6 +44,8 @@ PLATFORM_DOMAINS = {
     "e-susoft.com", "mystore.no", "myshopify.com", "shopify.com", "21xl.no", "webshop.no", "smartweb.no",
     "hugedomains.com", "sedo.com", "dan.com", "afternic.com", "godaddy.com", "parkingcrew.net", "bodis.com",
 }
+PRESS_HOSTS = {"mynewsdesk.com", "ntb.no"}
+PRESS_LINK = re.compile(r"https?://(www\.)?(mynewsdesk\.com/no/[\w-]+|kommunikasjon\.ntb\.no/presserom/[\w-]+)", re.I)
 PARKED = re.compile(
     r"(domain (name )?(is )?for sale|domenet (er )?til salgs|this domain (has been|was) registered|parkert domene|"
     r"domain parking|account suspended|buy this domain|kjøp dette domenet|registrert hos domeneshop|"
@@ -750,6 +752,16 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
             news.extend(found)
             if news:
                 break
+    if not news:
+        press = next((PRESS_LINK.match(a).group(0) for a, _r, _t in home.links + [l for x in p.context.get("extra_pages", []) for l in x.links]
+                      if PRESS_LINK.match(a)), None)
+        if press:
+            psnap = await f.get(press, company=org)
+            if not isinstance(psnap, FetchError):
+                pv2 = view(psnap)
+                first = (core_name(p.legal_name or "").split() or [""])[0]
+                if first and first in fold(pv2.text[:3000]):
+                    news.extend(_listing_news(pv2, founded))
     news = _drop_bursts(news)
     site_title = fold(home.tree.css_first("title").text()) if home.tree.css_first("title") else ""
     site_label = fold(site_dom.split(".")[0])
@@ -817,6 +829,7 @@ def find_date(text: str) -> tuple[str, str] | None:
 def _listing_news(lv: PageView, founded: str | None) -> list[tuple[str, str, PageView, str, str]]:
     out: list[tuple[str, str, PageView, str, str]] = []
     site_dom = registered_domain(lv.snap.final_url)
+    press_path = urlsplit(lv.snap.final_url).path.rstrip("/") if site_dom in PRESS_HOSTS else None
     seen: set[str] = set()
     for node in lv.tree.css("article, li, div, section"):
         links = [a for a in node.css("a[href]") if len((a.text() or "").strip()) >= 12]
@@ -828,6 +841,8 @@ def _listing_news(lv: PageView, founded: str | None) -> list[tuple[str, str, Pag
         a = links[0]
         href = urljoin(lv.snap.final_url, a.attributes.get("href") or "")
         if registered_domain(href) != site_dom or href in seen or href.rstrip("/") == lv.snap.final_url.rstrip("/"):
+            continue
+        if press_path and not urlsplit(href).path.startswith(press_path.rsplit("/", 1)[0]):
             continue
         title_txt = re.sub(r"\s+", " ", a.text()).strip()
         head = node.css_first("h1, h2, h3, h4")
