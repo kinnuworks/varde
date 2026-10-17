@@ -44,9 +44,11 @@ PLATFORM_DOMAINS = {
 }
 PARKED = re.compile(
     r"(domain (name )?(is )?for sale|domenet (er )?til salgs|this domain (has been|was) registered|parkert domene|"
-    r"domain parking|coming soon|kommer snart|under (construction|utvikling)|hello world!|default web page|"
-    r"web ?hotel|webhotell.{0,40}(aktivert|klar)|account suspended|it works!|index of /|"
-    r"buy this domain|kjøp dette domenet|registrert hos domeneshop|this site can.t be reached)", re.I)
+    r"domain parking|account suspended|buy this domain|kjøp dette domenet|registrert hos domeneshop|"
+    r"this site can.t be reached|default web page|index of /)", re.I)
+PARKED_WEAK = re.compile(
+    r"(coming soon|kommer snart|under (construction|utvikling|oppbygging)|hello world!|web ?hotel|"
+    r"webhotell.{0,40}(aktivert|klar)|it works!|siden er under arbeid)", re.I)
 ORG_LABEL = re.compile(
     r"(?:org(?:anisasjons)?\.?\s*-?\s*(?:nr|nummer|no|number)\.?|foretaksregisteret|mva(?:-?nr)?|vat(?:\s*no)?|"
     r"organization number|business id)\s*[:.]?\s*((?:NO\s?)?[89]\d{2}[\s. ]?\d{3}[\s. ]?\d{3})", re.I)
@@ -227,7 +229,7 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
     legal = p.legal_name or ""
     text = pv.text
     html = pv.snap.text
-    if len(text) < 120 or PARKED.search(text[:4000]):
+    if len(text) < 120 or PARKED.search(text[:4000]) or (len(text) < 1500 and PARKED_WEAK.search(text)):
         return None, "parked, placeholder or empty page"
     labelled, every = orgnr_mentions(text)
     group = {g for g in p.context.get("group_orgs", set())} | {s.get("organisasjonsnummer") for s in p.context.get("subunits", [])}
@@ -313,10 +315,15 @@ def candidates(p: Profile, seeds: dict[str, list[str]] | None, nav_homepages: li
         core = core_name(p.legal_name or "")
         words = [ascii_slug(w) for w in core.split() if ascii_slug(w)]
         slug = "".join(words)
+        filler = {"avd", "avdeling", "og", "i", "a", "the", "and", "co"}
+        words = [w for w in words if w not in filler] or words
+        slug = "".join(words)
         trimmed = [w for w in words if w not in ("holding", "invest", "gruppen", "group", "norge", "norway")]
         variants = [slug]
         if 1 < len(words) <= 4:
             variants.append("-".join(words))
+        if form_code in ("AS", "ASA") and 4 <= len(slug) <= 20:
+            add(f"{slug}.as", "name_derived")
         if trimmed and trimmed != words and len("".join(trimmed)) >= 5:
             variants.append("".join(trimmed))
         for v in variants:

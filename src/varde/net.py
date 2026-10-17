@@ -226,7 +226,7 @@ class Fetcher:
         hdrs = dict(headers or {})
         if accept_json:
             hdrs.setdefault("Accept", "application/json")
-        attempts = 4 if host in API_HOSTS else 2
+        attempts = 4 if host in API_HOSTS else 3
         for attempt in range(attempts):
             try:
                 async with self._sem(host):
