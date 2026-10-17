@@ -851,6 +851,15 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
         if excl:
             if contact_pv is not None and contact_pv is not pv and exclusive(p, contact_pv)[0]:
                 p.context["extra_pages"] = [contact_pv]
+            elif not any(_social(a) for a, _r, _t in pv.links):
+                link = next((a for a, _r, _t in pv.links if registered_domain(a) == dom
+                             and re.search(r"(kontakt|contact)", a, re.I)), None)
+                if link:
+                    csnap = await f.get(link, company=org)
+                    if not isinstance(csnap, FetchError):
+                        cv = view(csnap)
+                        if exclusive(p, cv)[0]:
+                            p.context["extra_pages"] = [cv]
             await mine(p, f, pv, e)
         else:
             p.mark_field("social_profile", "web_presence", "ambiguous", f"Site-derived facts withheld: {why}.")
