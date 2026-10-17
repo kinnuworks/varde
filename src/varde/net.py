@@ -134,7 +134,7 @@ class Fetcher:
         self._robots: dict[str, RobotFileParser | None] = {}
         self._robots_locks: dict[str, asyncio.Lock] = {}
         self._dns: dict[str, bool] = {}
-        self.api_per_host = {"data.brreg.no": 10, "pam-stilling-feed.nav.no": 6, "www.wikidata.org": 2}
+        self.api_per_host = {"data.brreg.no": 10, "pam-stilling-feed.nav.no": 6, "www.wikidata.org": 2, "api.doffin.no": 2}
 
     async def close(self) -> None:
         await self.client.aclose()

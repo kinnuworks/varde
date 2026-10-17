@@ -330,6 +330,14 @@ async def doffin(p: Profile, f: Fetcher) -> None:
     if not key:
         return
     org = p.organisation_number
+    rec = p.context.get("entity") or {}
+    form = (rec.get("organisasjonsform") or {}).get("kode")
+    sector = str((rec.get("institusjonellSektorkode") or {}).get("kode") or "")
+    nace = str((rec.get("naeringskode1") or {}).get("kode") or "")
+    public_like = (form in {"KF", "IKS", "SF", "FKF", "ORGL", "STAT", "KOMM", "FYLK", "KIRK", "SÆR", "BA", "SA"}
+                   or sector[:1] in ("3", "6") or sector in ("1110", "1120") or nace[:2] in ("35", "36", "37", "38", "84", "85", "86", "87"))
+    if not public_like:
+        return
     snap = await f.get("https://api.doffin.no/public/v2/search", params={"searchString": org, "numHitsPerPage": 20},
                        headers={"Ocp-Apim-Subscription-Key": key}, company=org, accept_json=True)
     if isinstance(snap, FetchError):
