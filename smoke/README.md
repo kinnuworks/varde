@@ -4,7 +4,7 @@
 
 ```bash
 uv run --frozen varde run --organisations smoke/companies.jsonl --output smoke/envelopes.jsonl \
-  --report smoke/run-report.json --run-id smoke-v1 --expected-count 100 --state-dir smoke/state
+  --report smoke/run-report.json --run-id smoke-v2 --expected-count 100 --state-dir smoke/state
 ```
 
 | File | Contents |
