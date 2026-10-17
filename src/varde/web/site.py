@@ -298,7 +298,7 @@ def _social(href: str) -> str | None:
     platform = SOCIAL_HOSTS.get(host)
     if not platform or SOCIAL_BAD.search(parts.path + ("?" + parts.query if parts.query else "")):
         return None
-    segs = [s for s in parts.path.split("/") if s]
+    segs = [unquote(s) for s in parts.path.split("/") if s]
     if not segs:
         return None
     if platform == "linkedin.com":
@@ -318,7 +318,7 @@ def _social(href: str) -> str | None:
             return None
         handle = f"profile.php?id={m.group(1)}"
     else:
-        handle = unquote(segs[0])
+        handle = segs[0]
     base = handle.split("/")[-1].lstrip("@").lower()
     if base in SOCIAL_GENERIC or len(base) < 2:
         return None
@@ -459,6 +459,33 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
         p.add_claim("hiring_signal", "activity", url, [ev(home, span)],
                     label="Careers page on the verified website" if kind == "careers_page" else "Job board linked from the verified website",
                     match={"method": "linked_from_verified_site", "detail": site_dom}, extra={"signal_type": kind})
+    boards = [u for u, (_r, kind) in hiring_urls.items() if kind == "applicant_tracking_board" and "teamtailor.com" in u]
+    if boards:
+        board = urlsplit(boards[0])
+        rss_url = f"{board.scheme}://{board.netloc}/jobs.rss"
+        snap = await f.get(rss_url, company=org)
+        if not isinstance(snap, FetchError) and "<rss" in snap.text[:500]:
+            channel = re.search(r"<channel>.*?<title>(.*?)</title>", snap.text, re.S)
+            first = (core_name(p.legal_name or "").split() or [""])[0]
+            if channel and first and first in fold(unescape(channel.group(1))):
+                bv = PageView(snap, HTMLParser(""), snap.text)
+                for item in list(re.finditer(r"<item>.*?</item>", snap.text, re.S))[:15]:
+                    block = item.group(0)
+                    t = re.search(r"<title>(.*?)</title>", block, re.S)
+                    link = re.search(r"<link>(.*?)</link>", block, re.S)
+                    d = re.search(r"<pubDate>(.*?)</pubDate>", block, re.S)
+                    if not t or not link:
+                        continue
+                    title_txt = unescape(re.sub(r"<!\[CDATA\[|\]\]>", "", t.group(1))).strip()
+                    when = _rss_date(d.group(1)) if d else None
+                    e = ev(bv, t.group(0))
+                    url = link.group(1).strip()
+                    match = {"method": "company_board_linked_from_verified_site", "detail": board.netloc}
+                    p.add_claim("job_ad", "activity", {"title": title_txt, "url": url, "published": when,
+                                                       "source": "company job board"},
+                                [e], as_of=(when or "")[:10], label="Open position on the company's job board", match=match)
+                    p.add_claim("hiring_signal", "activity", url, [e], as_of=(when or "")[:10], label="Job posting",
+                                match=match, extra={"signal_type": "job_posting", "title": title_txt})
     for item in _jsonld(home):
         if "JobPosting" in _types(item) and item.get("title"):
             posted = _date_ok(str(item.get("datePosted") or ""), founded)

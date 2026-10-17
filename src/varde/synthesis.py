@@ -171,11 +171,27 @@ def template(p: Profile) -> dict:
         add("Since the previous check: " + "; ".join(c["explanation"].rstrip(".") for c in changes[:3]) + ".",
             [x for x in (next((cl for cl in p.claims if cl["id"] == (c.get("current") or {}).get("claim_id")), None)
                          for c in changes[:3]) if x] or [name])
-    updates = p.published("registry_update")
+    updates = sorted(p.published("registry_update"), key=lambda c: c["value"].get("date") or "", reverse=True)
     if updates and not changes:
-        latest = sorted(updates, key=lambda c: c["value"].get("date") or "")[-1]
-        fields = ", ".join(latest["value"].get("changed_fields") or [])
-        add(f"The register's most recent update was on {latest['as_of']}" + (f" ({fields})." if fields else "."), [latest])
+        bits, cites = [], []
+        for u in updates:
+            for ch in u["value"].get("changes") or []:
+                if ch["field"] in ("employee count registration date", "employee count date (NAV Aa-register)"):
+                    continue
+                if ch["field"] in ("employees", "website", "name", "latest filed accounts year", "email", "phone",
+                                   "industry code", "share capital", "bankruptcy flag", "winding-up flag", "legal form") \
+                        or "address" in ch["field"]:
+                    bits.append(f"{ch['field']} set to {ch['new_value']} on {u['as_of']}")
+                    cites.append(u)
+                    break
+            if len(bits) >= 3:
+                break
+        if bits:
+            add("Recent changes in the register: " + "; ".join(bits) + ".", cites)
+        else:
+            latest = updates[0]
+            fields = ", ".join(latest["value"].get("changed_fields") or [])
+            add(f"The register's most recent update was on {latest['as_of']}" + (f" ({fields})." if fields else "."), [latest])
 
     valid = [x for x in s if validate(p, x)]
     unknowns = unknown_list(p)

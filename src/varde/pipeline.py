@@ -11,7 +11,9 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 
-from . import AGENT_NAME, __version__
+import httpx
+
+from . import AGENT_NAME, __version__, writer
 from .net import Budget, Fetcher, SnapshotStore
 from .profile import SECTIONS, Profile
 from .refresh import diff
@@ -135,14 +137,29 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
 
     await asyncio.gather(*(one(o) for o in orgs))
     await fetcher.close()
+    for org in orgs:
+        diff(profiles[org], previous.get(org))
+    llm_calls = 0
+    if writer.enabled() and budget.remaining_s() > 120:
+        wsem = asyncio.Semaphore(8)
+        async with httpx.AsyncClient(timeout=60) as client:
+            async def summarise(p: Profile) -> None:
+                nonlocal llm_calls
+                async with wsem:
+                    if budget.remaining_s() < 60:
+                        p.context["summary"] = template(p)
+                        return
+                    llm_calls += 1
+                    p.context["summary"] = await writer.write(p, client)
+            await asyncio.gather(*(summarise(profiles[o]) for o in orgs))
     completed = utc_now()
     envelopes = []
     for org in orgs:
         p = profiles[org]
-        diff(p, previous.get(org))
-        p.context["summary"] = template(p)
+        if "summary" not in p.context:
+            p.context["summary"] = template(p)
         ops = {"requests": budget.by_company.get(org, 0), "runtime_ms": timing.get(org),
-               "third_party_cost_usd": 0, "llm_calls": 0}
+               "third_party_cost_usd": 0, "llm_calls": 1 if str(p.context["summary"].get("writer", "")).startswith("model") else 0}
         status = "completed" if p.legal_name else "failed"
         envelopes.append(envelope(p, completed, ops, status))
     lat = sorted(timing.values())
@@ -151,7 +168,7 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
         "started_at": started, "completed_at": completed, "runtime_s": round(time.monotonic() - t0, 1),
         "expected_count": len(orgs), "emitted_envelopes": len(envelopes),
         "requests": budget.used, "requests_by_host": dict(sorted(budget.by_host.items(), key=lambda x: -x[1])[:25]),
-        "third_party_cost_usd": 0, "llm_calls": 0,
+        "third_party_cost_usd": 0, "llm_calls": llm_calls,
         "p50_ms": lat[len(lat) // 2] if lat else None, "p95_ms": lat[min(len(lat) - 1, int(len(lat) * 0.95))] if lat else None,
         "budgets": {"max_requests": max_requests, "time_budget_s": time_budget, "per_company_requests": per_company},
         "nav_index_built_at": nav.built_at, "seed_companies": len(shared["seeds"]),

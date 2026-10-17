@@ -447,6 +447,18 @@ async def update_feed(fetcher: Fetcher, orgs: list[str], since: str) -> tuple[Sn
     return last, out
 
 
+FIELD_EN = {
+    "antallAnsatte": "employees", "navn": "name", "forretningsadresse": "business address", "postadresse": "postal address",
+    "hjemmeside": "website", "epostadresse": "email", "telefon": "phone", "mobil": "mobile", "naeringskode1": "industry code",
+    "organisasjonsform": "legal form", "kapital": "share capital", "konkurs": "bankruptcy flag",
+    "underAvvikling": "winding-up flag", "sisteInnsendteAarsregnskap": "latest filed accounts year",
+    "registreringsdatoAntallAnsatteEnhetsregisteret": "employee count registration date",
+    "registreringsdatoAntallAnsatteNAVAaregisteret": "employee count date (NAV Aa-register)",
+    "vedtektsdato": "articles date", "vedtektsfestetFormaal": "statutory purpose", "aktivitet": "registered activity",
+    "registrertIMvaregisteret": "VAT registration", "institusjonellSektorkode": "institutional sector",
+}
+
+
 def feed_events(p: Profile, items: list[dict]) -> None:
     m = "brreg_update_feed_v1"
     items = sorted(items, key=lambda i: i["update"].get("dato") or "", reverse=True)[:12]
@@ -458,7 +470,14 @@ def feed_events(p: Profile, items: list[dict]) -> None:
         span = json_span(snap.text, "dato", upd.get("dato"), start=start, end=end)
         changes = [c for c in (upd.get("endringer") or []) if isinstance(c, dict)]
         paths = sorted({re.sub(r"/\d+", "", c.get("path", "")).strip("/") for c in changes if c.get("path")})
-        value = {"date": upd.get("dato"), "type": upd.get("endringstype"), "changed_fields": paths[:20]}
+        details = []
+        for c in changes:
+            path = c.get("path", "")
+            v = c.get("value")
+            if c.get("op") in ("replace", "add") and isinstance(v, (str, int, float, bool)) and path.count("/") <= 3:
+                details.append({"field": FIELD_EN.get(path.strip("/").split("/")[0], path.strip("/")), "path": path, "new_value": v})
+        value = {"date": upd.get("dato"), "type": upd.get("endringstype"), "changed_fields": paths[:20],
+                 "changes": details[:8]}
         ev = p.add_evidence(snap, source_class=CLASS, span=span, method=m, licence=LICENCE)
         p.add_claim("registry_update", "activity", value, [ev], as_of=(upd.get("dato") or "")[:10],
                     label="Registry update", match={"method": "orgnr_in_feed_record", "detail": "oppdateringer/enheter"})
