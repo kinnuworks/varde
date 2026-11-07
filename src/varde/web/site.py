@@ -424,6 +424,22 @@ def _reads_like_prose(text: str) -> bool:
     return caps / len(words) < 0.5
 
 
+def names_company(p: Profile, text: str) -> bool:
+    """True when the text carries this company's org number or every distinctive word of its name."""
+    if not text:
+        return False
+    if p.organisation_number in digits(text) or re.search(_orgnr_raw_pattern(p.organisation_number), text):
+        return True
+    words = [ascii_slug(w) for w in core_name(p.legal_name or "").split() if len(ascii_slug(w)) >= 3]
+    words = [w for w in words if w not in ("holding", "norge", "norway", "og", "as")]
+    if not words:
+        return False
+    hay = ascii_slug(text) if len(text) < 200 else " ".join(ascii_slug(w) for w in fold(text).split())
+    hay = " " + hay + " "
+    folded = " " + " ".join(ascii_slug(w) for w in fold(text).split()) + " "
+    return all(f" {w} " in folded or w in ascii_slug(text[:400]) for w in words)
+
+
 def handle_matches(handle: str, legal: str, site_dom: str, people: list[str] | None = None) -> bool:
     """A social handle must carry a distinctive part of the company's name or website domain,
     and must not be a registered person's own account."""
@@ -446,7 +462,8 @@ def handle_matches(handle: str, legal: str, site_dom: str, people: list[str] | N
         "holding", "norge", "norway", "gruppen", "group", "og", "optikk", "frisor", "tannlege", "advokat", "regnskap",
         "eiendom", "bygg", "elektro", "maskin", "transport", "service", "consult", "consulting", "design", "media"}]
     if distinct:
-        return any(t in base for t in distinct)
+        need = min(2, len(distinct))
+        return sum(1 for t in distinct if t in base) >= need
     return "".join(tokens) in base
 
 
@@ -676,7 +693,7 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
             for item in re.finditer(r"<(item|entry)\b.*?</\1>", snap.text, re.S | re.I):
                 block = item.group(0)
                 t = re.search(r"<title[^>]*>(.*?)</title>", block, re.S | re.I)
-                d = re.search(r"<(pubDate|published|updated|dc:date)[^>]*>(.*?)</\1>", block, re.S | re.I)
+                d = re.search(r"<(pubDate|published|dc:date)[^>]*>(.*?)</\1>", block, re.S | re.I)
                 link = re.search(r"<link[^>]*>(.*?)</link>|<link[^>]*href=\"([^\"]+)\"", block, re.S | re.I)
                 if not t or not d:
                     continue
@@ -689,7 +706,7 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
                 when = _date_ok(when, founded) if when else None
                 if title_txt and when and not STUB_NEWS.search(title_txt) and not re.search(r"[?&]p=1(?!\d)", block):
                     href = (link.group(1) or link.group(2) or "").strip() if link else ""
-                    news.append((title_txt, when, fv, t.group(0), href or feed_link))
+                    news.append((title_txt, when, fv, t.group(0), href or feed_link, unescape(re.sub(r"<[^>]+>", " ", block))))
                 if len(news) >= 20:
                     break
     if not news:
@@ -698,7 +715,8 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
                 when = _date_ok(str(item["datePublished"]), founded)
                 raw = _raw_find(home.snap.text, re.escape(json.dumps(item["headline"], ensure_ascii=False)[1:-1][:60]))
                 if when and raw:
-                    news.append((item["headline"], when, home, raw, item.get("url") or home.snap.final_url))
+                    news.append((item["headline"], when, home, raw, item.get("url") or home.snap.final_url,
+                                 f'{item.get("headline", "")} {item.get("description", "")} {item.get("articleBody", "")[:2000]}'))
     if not news:
         listing = next((a for a, _r, _t in home.links if registered_domain(a) == site_dom and NEWS_PATH.search(urlsplit(a).path)), None)
         tries = [listing] if listing else []
@@ -721,7 +739,7 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
             for item in re.finditer(r"<(item|entry)\b.*?</\1>", fsnap.text, re.S | re.I):
                 block = item.group(0)
                 t = re.search(r"<title[^>]*>(.*?)</title>", block, re.S | re.I)
-                d = re.search(r"<(pubDate|published|updated|dc:date)[^>]*>(.*?)</\1>", block, re.S | re.I)
+                d = re.search(r"<(pubDate|published|dc:date)[^>]*>(.*?)</\1>", block, re.S | re.I)
                 link = re.search(r"<link[^>]*>(.*?)</link>|<link[^>]*href=\"([^\"]+)\"", block, re.S | re.I)
                 if not t or not d:
                     continue
@@ -734,7 +752,7 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
                 when = _date_ok(when, founded) if when else None
                 if title_txt and when and not STUB_NEWS.search(title_txt):
                     href = ((link.group(1) or link.group(2) or "").strip() if link else "") or furl
-                    news.append((title_txt, when, fv, t.group(0), href))
+                    news.append((title_txt, when, fv, t.group(0), href, unescape(re.sub(r"<[^>]+>", " ", block))))
                 if len(news) >= 20:
                     break
         for url in ([] if news else tries):
@@ -747,8 +765,7 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
             found = _listing_news(lv, founded)
             if not found:
                 found = await _article_dates(f, org, lv, site_dom, founded)
-            if not found:
-                found = await _sitemap_dates(f, org, lv, site_dom, founded)
+
             news.extend(found)
             if news:
                 break
@@ -772,7 +789,8 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
         if "|" in title_txt and fold(title_txt.split("|")[-1]) in (site_label, fold(p.legal_name or "")):
             return False  # a page title such as "Hjem | Company"
         words = t.split()
-        if re.match(r"^(gå til|les mer|se mer|read more|learn more|klikk her|click here|se alle|vis alle)\b", t):
+        if re.match(r"^(gå til|les mer|les flere|se mer|se flere|flere nyheter|alle nyheter|read more|learn more|see more|see all|"
+                    r"more news|klikk her|click here|se alle|vis alle|vis flere)\b", t) or re.search(r"(flere|alle|more|all) (nyheter|news|artikler|saker)$", t):
             return False
         path = urlsplit(href or "").path.strip("/")
         slugwords = re.split(r"[-_]", path.split("/")[-1]) if path else []
@@ -780,8 +798,10 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
             return False  # a category or section name, not an article
         return True
     news = [n for n in news if newsy(n[0], n[4])]
+    if p.context.get("strict_site"):
+        news = [n for n in news if names_company(p, (n[0] or "") + " " + (n[5] if len(n) > 5 else ""))]
     seen_titles: set[str] = set()
-    for title_txt, when, pv, raw, href in sorted(news, key=lambda x: x[1], reverse=True)[:20]:
+    for title_txt, when, pv, raw, href, *_ctx in sorted(news, key=lambda x: x[1], reverse=True)[:20]:
         key = fold(title_txt)
         if key in seen_titles or raw not in pv.snap.text:
             continue
@@ -913,7 +933,7 @@ async def _article_dates(f: Fetcher, org: str, lv: PageView, site_dom: str, foun
         h1 = av.tree.css_first("h1")
         title = re.sub(r"\s+", " ", h1.text()).strip() if h1 else anchor
         if 8 <= len(title) <= 200 and not STUB_NEWS.search(title):
-            out.append((title, when, av, raw, snap.final_url))
+            out.append((title, when, av, raw, snap.final_url, av.text[:6000]))
     return out
 
 
@@ -1092,6 +1112,19 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
             rejected.append(f"{cand.url}: proof span not in snapshot")
             continue
         dom = registered_domain(snap.final_url)
+        rec_e = p.context.get("entity") or {}
+        # A subsidiary given its parent's site is the risk; a parent's own site is its own.
+        in_group = bool(p.context.get("group_parent"))
+        if in_group and proof.strength < 3:
+            p.add_claim("related_website", "web_presence", dom, [e],
+                        label="Website of the group this company belongs to",
+                        match={"method": proof.method, "detail": proof.detail + "; the company is part of a group and its own organisation number is not on the site",
+                               "candidate_source": cand.source},
+                        extra={"url": snap.final_url, "exclusive": False})
+            p.mark_field("official_website", "web_presence", "ambiguous",
+                         "The site found belongs to the company's group; its own organisation number is not on it.")
+            return
+        p.context["strict_site"] = proof.strength < 3 or bool(rec_e.get("erIKonsern"))
         excl, why = exclusive(p, pv)
         p.add_claim("official_website", "web_presence", dom, [e],
                     label="Official website", confidence=0.99 if proof.strength == 3 else 0.95,

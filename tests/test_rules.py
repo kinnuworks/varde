@@ -150,3 +150,17 @@ def test_unlabelled_foreign_orgnr_blocks_weak_proof():
     html = "<html><body><h1>DIPS AS</h1>" + "<p>Tekst om firmaet her.</p>" * 10 + "<p>75 59 20 00</p><p>923 609 016</p></body></html>"
     proof, _ = prove(p, view(snap(html)), Candidate("https://example.no/", "seed"))
     assert proof is None
+
+
+def test_news_must_name_the_company_on_weak_or_group_sites():
+    from varde.web.site import names_company
+    p = entity_profile(org="912345674", name="NILSSON HARAS AS")
+    assert not names_company(p, "Nilsson Gruppen bygger nytt prosjekt i Bodø")
+    assert names_company(p, "Nilsson Haras åpner ny stall i Sortland")
+    assert names_company(p, "Org.nr 912 345 674 vant prisen")
+
+
+def test_group_handle_does_not_pass_for_member_company():
+    from varde.web.site import handle_matches
+    assert not handle_matches("facebook.com/nilssongruppen", "NILSSON HARAS AS", "nilssonharas.no")
+    assert handle_matches("facebook.com/nilssonharas", "NILSSON HARAS AS", "nilssonharas.no")

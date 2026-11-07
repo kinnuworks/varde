@@ -38,7 +38,7 @@ class NavIndex:
         except (FileNotFoundError, ModuleNotFoundError, OSError, ValueError):
             pass
 
-    async def refresh(self, f: Fetcher, names: dict[str, list[str]], max_pages: int = 40) -> None:
+    async def refresh(self, f: Fetcher, names: dict[str, list[str]], max_pages: int = 500) -> None:
         """Read the feed from the index cursor to its live end.
 
         Ads that turned inactive are dropped. New active ads whose employer name
