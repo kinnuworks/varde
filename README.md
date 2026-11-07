@@ -2,6 +2,10 @@
 
 Varde researches Norwegian companies from their organisation numbers. For each number it returns one profile in which every published fact carries its source URL, the time it was retrieved, a SHA-256 of the saved response, the exact quoted text and the method that tied it to that organisation number. What it cannot find or cannot prove is marked with an explicit state, never as zero.
 
+It is built for anyone who has to defend a fact about a Norwegian company, such as a sales, credit or compliance analyst. It reads the public registers first, then fetches the company's own website live and publishes it only when the site proves it belongs to that organisation number, so a similar name never puts one company's website, social profiles or news under another.
+
+Try it in 30 seconds: open the [live site](https://build-varde-a-public-web-app-for-researc.sites.jboxai.com), search for a company by name or number, click any fact to see its source and quote, or pick two companies to compare. It shows 1,000 companies from one random run.
+
 A varde is the stone cairn that marks a trail in the Norwegian mountains.
 
 ## Run it
