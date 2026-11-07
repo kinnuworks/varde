@@ -54,3 +54,33 @@ def test_tag_links_are_not_news():
     titles = [x[0] for x in _listing_news(view(snap), None)]
     assert titles == ["3 gode grunner til å sjekke katten"]
 
+
+
+def _declared_setup(page_html: str, name: str = "PERVACO AS", url: str = "https://www.pervaco.no/"):
+    from varde.net import Snapshot
+    from varde.web.site import Candidate
+    p = company(name)
+    p.context["entity"]["hjemmeside"] = "www.pervaco.no"
+    body = '{"organisasjonsnummer":"979543883","navn":"' + name + '","hjemmeside":"www.pervaco.no"}'
+    p.context["entity_snap"] = Snapshot(url="https://data.brreg.no/x", final_url="https://data.brreg.no/x", status=200,
+                                        retrieved_at="2026-11-07T00:00:00Z", sha256="1" * 64, path="e.json",
+                                        content_type="application/json", text=body)
+    snap = Snapshot(url=url, final_url=url, status=200, retrieved_at="2026-11-07T00:00:00Z", sha256="2" * 64,
+                    path="s.html", content_type="text/html", text=page_html)
+    return p, Candidate(url, "registry_website"), snap
+
+
+def test_declared_website_is_published_on_the_registers_word():
+    from varde.web.site import _publish_declared
+    p, cand, snap = _declared_setup("<html><title>Pervaco</title><body>" + "Rengjøring og service. " * 20 + "</body></html>")
+    assert _publish_declared(p, cand, snap)
+    site = p.published("official_website")[0]
+    assert site["value"] == "pervaco.no" and site["match"]["method"] == "declared_in_register"
+    assert not site["exclusive"]
+
+
+def test_declared_manager_site_that_never_names_the_company_is_not_published():
+    from varde.web.site import _publish_declared
+    p, cand, snap = _declared_setup("<html><title>BATE</title><body>" + "Boligbyggelag. " * 20 + "Org.nr 946 450 197</body></html>",
+                                    name="SAMEIET ST OLAV", url="https://www.bate.no/")
+    assert not _publish_declared(p, cand, snap)

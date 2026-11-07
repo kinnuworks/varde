@@ -71,7 +71,9 @@ SOCIAL_GENERIC = {"facebook", "instagram", "linkedin", "twitter", "youtube", "ti
                   "channel", "share", "sharer", "x", "intent", "watch", "explore", "accounts", "groups", "pin", "pins"}
 ATS = re.compile(r"(teamtailor\.com|webcruiter\.(no|com)|jobbnorge\.no|recman\.(no|io)|hrmanager\.no|"
                  r"easycruit\.com|reachmee\.com|jobylon\.com|varbi\.com|workable\.com|lever\.co|"
-                 r"greenhouse\.io|smartrecruiters\.com|recruitee\.com|talentech\.com|jobbsafari\.no)", re.I)
+                 r"greenhouse\.io|smartrecruiters\.com|recruitee\.com|talentech\.com|jobbsafari\.no|"
+                 r"ashbyhq\.com|personio\.(de|com)|myworkdayjobs\.com|hr-manager\.net|finn\.no/job|"
+                 r"arbeidsplassen\.nav\.no/stillinger)", re.I)
 CAREERS_PATH = re.compile(r"/(karriere|career|careers|jobb|jobs|ledige[-_]stillinger|stillinger|jobbe-hos-oss|"
                           r"jobb-hos-oss|vacancies|rekruttering)(/|$|\.)", re.I)
 NO_JOBS = re.compile(r"(ingen ledige|for tida ingen|for tiden ingen|ingen stillinger|ingen utlyste|no open positions|"
@@ -388,9 +390,22 @@ def candidates(p: Profile, seeds: dict[str, list[str]] | None, nav_homepages: li
                 add(f"{v}.no", "name_derived")
         if len(slug) >= 6:
             add(f"{slug}.com", "name_derived")
+        # Hyphens and initials as written ("SJØ-SPORT MANDAL" on sjo-sport.no, "P.E. GAARUD" on pe-gaarud.no),
+        # and a leading "THE" kept ("THE MICE GURU" on themiceguru.com).
+        raw_words = re.findall(r"[\wæøåÆØÅ.&-]+", re.sub(r"\b(AS|ASA|SA|DA|ANS|NUF|BA|KS)\b\.?$", "", (p.legal_name or "").upper()).strip())
+        if raw_words:
+            head = raw_words[0]
+            if "-" in head.strip("-") and len(head) >= 5:
+                add("-".join(ascii_slug(x) for x in head.split("-") if ascii_slug(x)) + ".no", "name_derived")
+            if re.fullmatch(r"(?:[A-ZÆØÅ]\.){1,3}", head) and len(raw_words) > 1:
+                initials = head.replace(".", "").lower()
+                add(f"{initials}-{ascii_slug(raw_words[1].lower())}.no", "name_derived")
+            if head == "THE" and len(raw_words) > 1:
+                add(f"the{''.join(ascii_slug(w.lower()) for w in raw_words[1:])}.com", "name_derived")
         # The first distinctive word alone is often the brand ("KREDAH INKASSO AS" on kredah.no).
         first = next((w for w in words if w not in GENERIC_WORDS and w not in FIRST_WORD_STOP and len(w) >= 4), None)
-        if first and len(words) > 1:
+        first_raw = (raw_words[0] if raw_words else "")
+        if first and len(words) > 1 and first == words[0] and "-" not in first_raw and "." not in first_raw:
             add(f"{first}.no", "name_derived")
     return out[:10]
 
@@ -1058,6 +1073,51 @@ async def name_unique(p: Profile, f: Fetcher) -> bool | None:
     return not others
 
 
+def _publish_declared(p: Profile, cand: Candidate, snap: Snapshot) -> bool:
+    """The company declared this website in Enhetsregisteret and it is live, but the site itself does not
+    prove the organisation number (often a group, chain or manager site). Publish it on the register's word,
+    labelled as such, and take nothing else from the site."""
+    from ..profile import json_span
+    esnap = p.context.get("entity_snap")
+    reg = (p.context.get("entity") or {}).get("hjemmeside")
+    if esnap is None or not reg:
+        return False
+    pv = view(snap)
+    labelled, _every = orgnr_mentions(pv.text)
+    others = labelled - {p.organisation_number} - set(p.context.get("group_orgs", set()))
+    title = pv.tree.css_first("title")
+    shown = name_visible(pv.text + " " + (title.text() if title else ""), p.legal_name or "")
+    label = ascii_slug((registered_domain(snap.final_url) or "").split(".")[0])
+    words = [ascii_slug(w) for w in core_name(p.legal_name or "").split() if len(ascii_slug(w)) >= 3]
+    trade = GENERIC_WORDS | FIRST_WORD_STOP | {"barnehage", "barnehager", "skole", "kommune", "legat", "legata", "sameie",
+                                               "borettslag", "boligsameie", "klinikk", "senter", "stiftelse"}
+    spelled = any(w in label for w in words if w not in trade)
+    if not (shown or spelled):
+        return False  # a site that neither names this company nor spells it: often a manager or landlord
+    if others and not shown:
+        return False
+    span = json_span(esnap.text, "hjemmeside", reg)
+    if not span:
+        return False
+    e = p.add_evidence(esnap, source_class="official_registry", span=span, method="brreg_entity_v1",
+                       licence="NLOD 2.0 (Brønnøysundregistrene)",
+                       note=f"The company declares this website in Enhetsregisteret; fetched live at {snap.retrieved_at} "
+                            f"({snap.final_url}, HTTP {snap.status}).")
+    if not e:
+        return False
+    p.claims = [c for c in p.claims if not (c["field"] in ("official_website", "related_website") and c["availability"] != "available")]
+    p.add_claim("official_website", "web_presence", registered_domain(snap.final_url), [e],
+                label="Official website (declared in the register)", confidence=0.85,
+                match={"method": "declared_in_register",
+                       "detail": "hjemmeside in Enhetsregisteret; the live site does not print the organisation number",
+                       "candidate_source": cand.source},
+                extra={"url": snap.final_url, "exclusive": False})
+    p.mark_field("social_profile", "web_presence", "ambiguous",
+                 "The website is declared in the register but does not itself prove the organisation number, "
+                 "so profiles and news linked from it are not used.")
+    return True
+
+
 # ---------------------------------------------------------------- driver
 async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, nav_homepages: list[str]) -> None:
     org = p.organisation_number
@@ -1069,6 +1129,7 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
     if "name_unique" not in p.context and distinctive(p.legal_name or ""):
         p.context["name_unique"] = await name_unique(p, f)
     rejected: list[str] = []
+    declared_live: tuple[Candidate, Snapshot] | None = None
     for cand in cands:
         snap = await f.get(cand.url, company=org)
         if isinstance(snap, FetchError) and snap.reason in ("dns_or_private_address", "network"):
@@ -1127,6 +1188,8 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
                     break
         if not proof or not proof.span:
             rejected.append(f"{cand.url}: {reason or 'proof has no quotable span'}")
+            if cand.source == "registry_website" and reason and "parked" not in reason and declared_live is None:
+                declared_live = (cand, snap)
             continue
         if proof.strength < 3:
             dom_c = registered_domain(snap.final_url)
@@ -1134,7 +1197,7 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
             own_email = ((p.context.get("entity") or {}).get("epostadresse") or "")
             if "@" in own_email:
                 own.add(registered_domain(own_email.split("@", 1)[1]))
-            if dom_c in p.context.get("other_entity_domains", set()):
+            if dom_c in p.context.get("other_entity_domains", set()) and cand.source != "registry_website":
                 rejected.append(f"{cand.url}: the register lists this domain for another company")
                 continue
             check_pv = contact_pv
@@ -1166,7 +1229,7 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
         rec_e = p.context.get("entity") or {}
         # A subsidiary given its parent's site is the risk; a parent's own site is its own.
         in_group = bool(p.context.get("group_parent"))
-        if in_group and proof.strength < 3:
+        if in_group and proof.strength < 3 and cand.source != "registry_website":
             p.add_claim("related_website", "web_presence", dom, [e],
                         label="Website of the group this company belongs to",
                         match={"method": proof.method, "detail": proof.detail + "; the company is part of a group and its own organisation number is not on the site",
@@ -1197,6 +1260,8 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
             await mine(p, f, pv, e)
         else:
             p.mark_field("social_profile", "web_presence", "ambiguous", f"Site-derived facts withheld: {why}.")
+        return
+    if declared_live is not None and _publish_declared(p, *declared_live):
         return
     transient = ("network", "timeout", "budget", "http_429", "http_502", "http_503", "http_504")
     if rejected and any(any(r.endswith(": " + t) for t in transient) for r in rejected) and not p.context.get("web_retried"):

@@ -502,6 +502,8 @@ async def update_feed(fetcher: Fetcher, orgs: list[str], since: str) -> tuple[Sn
             body = snap.json()
         except ValueError:
             continue
+        for nr in chunk:  # an empty list means checked, with no changes
+            out.setdefault(nr, [])
         for upd in (body.get("_embedded") or {}).get("oppdaterteEnheter") or []:
             nr = upd.get("organisasjonsnummer")
             out.setdefault(nr, []).append({"update": upd, "snap": snap})

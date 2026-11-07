@@ -109,6 +109,12 @@ def main(argv: list[str] | None = None) -> None:
     report["coverage"] = coverage(envelopes)
     report["validation"] = validate(envelopes, orgs)
     report["changes"] = sum(len(e["changes"]) for e in envelopes)
+    report["view"] = {
+        "report_html": None if (args.no_html or stopped) else str(out_dir / "report.html"),
+        "how_to_use": "Open report.html in a browser (works offline and on a phone): search by name or organisation "
+                      "number, click any fact to see its source page, quote and retrieval time, or pick companies to compare.",
+        "live_example": os.environ.get("VARDE_LIVE_URL", "https://build-varde-a-public-web-app-for-researc.sites.jboxai.com"),
+    }
     Path(args.report or out_dir / "run-report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     if args.state_dir and not stopped:
         save_state(args.state_dir, envelopes, run_id)

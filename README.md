@@ -2,9 +2,9 @@
 
 Varde researches Norwegian companies from their organisation numbers. For each number it returns one profile in which every published fact carries its source URL, the time it was retrieved, a SHA-256 of the saved response, the exact quoted text and the method that tied it to that organisation number. What it cannot find or cannot prove is marked with an explicit state, never as zero.
 
-It is built for anyone who has to defend a fact about a Norwegian company, such as a sales, credit or compliance analyst. It reads the public registers first, then fetches the company's own website live and publishes it only when the site proves it belongs to that organisation number, so a similar name never puts one company's website, social profiles or news under another.
+It is built for anyone who has to defend a fact about a Norwegian company, such as a sales, credit or compliance analyst. It reads the public registers first, then fetches the company's own website live and publishes it only when the site proves it belongs to that organisation number or the company itself declares it in the register, so a similar name never puts one company's website, social profiles or news under another.
 
-Try it in 30 seconds: open the [live site](https://build-varde-a-public-web-app-for-researc.sites.jboxai.com), search for a company by name or number, click any fact to see its source and quote, or pick two companies to compare. It shows 1,000 companies from one random run.
+Try it in 30 seconds: open the [live site](https://build-varde-a-public-web-app-for-researc.sites.jboxai.com), search for a company by name or number, click any fact to see its source and quote, or pick two companies to compare. It shows 1,000 companies from one random run. Every run also writes `report.html`, the same view of its own results, which works offline and on a phone.
 
 A varde is the stone cairn that marks a trail in the Norwegian mountains.
 
@@ -88,6 +88,8 @@ Candidates come from the register's website field, the register's email domain, 
 2. the registry phone or email together with the legal name;
 3. the legal name on the website the register declares, for distinctive names;
 4. the legal name with the full registered street address and postcode.
+
+If none of these holds but the company declares the site in Enhetsregisteret and the live site names or spells the company, the website is published on the register's word (match method `declared_in_register`, lower confidence) and nothing else is taken from that site. A shared group or chain site is often the only website a company has, and this is the site the company itself gives.
 
 A page that names a different organisation number without ours is rejected, and so is any page listing three or more other organisation numbers (directories, supplier and client lists), even when ours is among them. Without our organisation number on the site, a site that presents a longer company name built on ours (Sildakongen Produksjon AS for Sildakongen AS) and never our own legal name belongs to a sister company and is rejected. A subsidiary whose only proof is on its parent's site gets a `related_website` claim labelled as the group's site, `official_website` is marked `ambiguous`, and nothing else is taken from that site. On such weaker sites, and on any site of a company in a group, a news item must name the company (its number or every distinctive word of its name). Parked, for-sale, placeholder and empty pages never count. If the site is not exclusive to the company (another organisation number appears on it), only the website itself is published and the facts derived from it are withheld as `ambiguous`.
 

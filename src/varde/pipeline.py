@@ -164,6 +164,7 @@ async def research(p: Profile, f: Fetcher, shared: dict, previous: dict | None) 
     registers.gleif_claims(p, shared["gleif"].get(org))
     registers.wikidata_claims(p, shared["wikidata"].get(org))
     registers.ted_claims(p, shared["ted"].get(org))
+    p.context["feed_checked"] = org in shared["updates"]
     brreg.feed_events(p, shared["updates"].get(org, []))
     sub_orgs = {u.get("organisasjonsnummer") for u in p.context.get("subunits", []) if u.get("organisasjonsnummer")}
     await registers.nav_jobs(p, f, shared["nav"], sub_orgs)

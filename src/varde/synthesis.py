@@ -323,6 +323,8 @@ def unknown_list(p: Profile) -> list[str]:
             out.append("Hiring: no open NAV job ads and no careers page on the verified website.")
         if not p.published("dated_news"):
             out.append("Dated news: none found on the verified website.")
+    if p.context.get("feed_checked") and not p.published("registry_update") and not [c for c in p.changes if c.get("material")]:
+        out.append("What changed: the register's update feed lists no changes for this company in the past year.")
     if not p.published("revenue") and not any(c["field"] == "annual_accounts" for c in p.claims):
         out.append("Annual accounts: no structured figures returned by Regnskapsregisteret.")
     seen: set[str] = set()
