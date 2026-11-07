@@ -424,6 +424,21 @@ def _reads_like_prose(text: str) -> bool:
     return caps / len(words) < 0.5
 
 
+def sister_on_page(p: Profile, text: str) -> str | None:
+    """Name of a longer company name built on ours (Sildakongen Produksjon AS for Sildakongen AS)
+    when the page shows it and never shows our own legal name."""
+    core = core_name(p.legal_name or "").strip()
+    if len(core) < 3 or not text:
+        return None
+    flat = re.sub(r"\s+", " ", text)
+    if re.search(re.escape(core) + r"\s+(AS|ASA|SA|DA|ANS)\b", flat, re.I):
+        return None
+    m = re.search(re.escape(core) + r"((?:\s+[A-ZÆØÅ][\wæøåÆØÅ&-]*){1,3})\s+(AS|ASA|A/S|AB)\b", flat, re.I)
+    if not m or not m.group(1)[1:2].isupper():
+        return None
+    return m.group(0)
+
+
 def names_company(p: Profile, text: str) -> bool:
     """True when the text carries this company's org number or every distinctive word of its name."""
     if not text:
@@ -1098,6 +1113,10 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
                     csnap = await f.get(link, company=org)
                     if not isinstance(csnap, FetchError):
                         check_pv = view(csnap)
+            sister = sister_on_page(p, pv.text + " " + (check_pv.text if check_pv is not None else ""))
+            if sister:
+                rejected.append(f"{cand.url}: the site presents itself as {sister}, a different company")
+                continue
             if check_pv is not None:
                 lab, _all = orgnr_mentions(check_pv.text)
                 foreign = lab - {org} - set(p.context.get("group_orgs", set()))

@@ -38,6 +38,8 @@ def main() -> None:
     parser.add_argument("--out", default="src/varde/data/nav_index.json.gz")
     parser.add_argument("--state", default=".cache/nav_feed_state.json")
     parser.add_argument("--workers", type=int, default=8)
+    parser.add_argument("--since", default="Sat, 01 Nov 2025 00:00:00 GMT",
+                        help="start the feed at this HTTP date; ads untouched since then are long closed")
     args = parser.parse_args()
 
     state_path = Path(args.state)
@@ -49,7 +51,8 @@ def main() -> None:
 
     pages = 0
     while state["next"]:
-        response = client.get(BASE + state["next"])
+        first = state["next"] == "/api/v1/feed"
+        response = client.get(BASE + state["next"], headers={"If-Modified-Since": args.since} if first else {})
         if response.status_code == 401:
             client.headers["Authorization"] = f"Bearer {token(client)}"
             continue

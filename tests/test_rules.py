@@ -164,3 +164,12 @@ def test_group_handle_does_not_pass_for_member_company():
     from varde.web.site import handle_matches
     assert not handle_matches("facebook.com/nilssongruppen", "NILSSON HARAS AS", "nilssonharas.no")
     assert handle_matches("facebook.com/nilssonharas", "NILSSON HARAS AS", "nilssonharas.no")
+
+
+def test_sister_company_name_on_page_blocks_weak_proof():
+    from varde.web.site import sister_on_page
+    p = Profile.__new__(Profile)
+    p.legal_name = "SILDAKONGEN AS"
+    assert sister_on_page(p, "Velkommen til Sildakongen Produksjon AS i Bergen") == "Sildakongen Produksjon AS"
+    assert sister_on_page(p, "Sildakongen AS og Sildakongen Produksjon AS") is None
+    assert sister_on_page(p, "Sildakongen lager sild") is None
