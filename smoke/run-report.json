@@ -1,19 +1,19 @@
 {
   "agent": "Varde",
   "version": "1.0.0",
-  "commit": "e012924d59879aad4fd62a4af216ee80a8481457",
-  "run_id": "smoke-v5",
-  "started_at": "2026-10-17T17:58:00Z",
-  "completed_at": "2026-10-17T17:59:16Z",
-  "runtime_s": 76.5,
+  "commit": "7a0ee32043d1165b112f7a5e2539d46ae55c9dc7",
+  "run_id": "smoke-v6",
+  "started_at": "2026-11-07T08:51:07Z",
+  "completed_at": "2026-11-07T08:52:27Z",
+  "runtime_s": 79.8,
   "expected_count": 100,
   "emitted_envelopes": 100,
-  "requests": 907,
+  "requests": 906,
   "requests_by_host": {
     "data.brreg.no": 602,
     "www.bonaslisse-wines.com": 18,
-    "www.alfabrannvern.no": 11,
     "www.greentec.com": 11,
+    "www.alfabrannvern.no": 10,
     "api.doffin.no": 7,
     "www.tendencia.no": 7,
     "norgesagentene.no": 7,
@@ -38,14 +38,14 @@
   },
   "third_party_cost_usd": 0,
   "llm_calls": 100,
-  "p50_ms": 9546,
-  "p95_ms": 28135,
+  "p50_ms": 9433,
+  "p95_ms": 26899,
   "budgets": {
     "max_requests": 4000,
     "time_budget_s": 2400.0,
     "per_company_requests": 40
   },
-  "nav_index_built_at": "2026-10-17T09:08:11+00:00",
+  "nav_index_built_at": "2026-11-07T08:17:35+00:00",
   "seed_companies": 82820,
   "coverage": {
     "official_website": {
@@ -74,7 +74,7 @@
     },
     "role": {
       "companies": 100,
-      "facts": 397
+      "facts": 398
     },
     "workplace": {
       "companies": 78,
@@ -86,11 +86,11 @@
     },
     "registry_update": {
       "companies": 100,
-      "facts": 212
+      "facts": 207
     },
     "group_relation": {
       "companies": 8,
-      "facts": 51
+      "facts": 52
     },
     "lei": {
       "companies": 6,
@@ -108,5 +108,5 @@
     },
     "claims_without_exact_span": 0
   },
-  "changes": 0
+  "changes": 4
 }

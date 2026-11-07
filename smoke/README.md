@@ -4,7 +4,7 @@
 
 ```bash
 uv run --frozen varde run --organisations smoke/companies.jsonl --output smoke/envelopes.jsonl \
-  --report smoke/run-report.json --run-id smoke-v5 --expected-count 100 --state-dir smoke/state
+  --report smoke/run-report.json --run-id smoke-v6 --expected-count 100 --state-dir smoke/state
 ```
 
 | File | Contents |
@@ -15,3 +15,5 @@ uv run --frozen varde run --organisations smoke/companies.jsonl --output smoke/e
 | `report.html` | Open in a browser to search, compare and verify every fact (keep it next to `snapshots/`) |
 | `snapshots/` | The saved responses behind every claim, named by SHA-256 |
 | `rerun/` | A second run against the first (`--previous smoke/envelopes.jsonl`): zero changes, which shows refresh is idempotent |
+
+The state directory held the run on record from 17 October (`smoke-v5`), so this run's envelopes carry the changes since then: a new group company, a new board member, a changed registered activity and one new register event.

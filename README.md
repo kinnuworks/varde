@@ -55,7 +55,7 @@ Availability states: `available`, `not_available` (checked, nothing there), `blo
 
 Dated register events (founding, registration, articles, former names, filings, employee and address changes) are published as `dated_activity` claims in the form `title (YYYY-MM-DD)`, separate from `dated_news`, which only holds items the company published itself.
 
-Value shapes in the external families: `official_website` is the registered domain (full address in `url`), `social_profile` is `platform.com/handle` in lower case without scheme (original link in `url`), `hiring_signal` is a careers page, job board or job posting URL, and `dated_news` is `title (datetime)` with the source's own date.
+Value shapes in the external families: `official_website` is the registered domain (full address in `url`), `social_profile` is `platform.com/handle` in lower case without scheme (original link in `url`), `hiring_signal` is a careers page, job board or job posting URL, and `dated_news` is `title (datetime)` with the source's own publish date (feed `pubDate`, `published` or `dc:date`, or a date printed with the item; never a modified date). Menu and listing labels are never news.
 
 ## Sources
 
@@ -83,7 +83,7 @@ Candidates come from the register's website field, the register's email domain, 
 3. the legal name on the website the register declares, for distinctive names;
 4. the legal name with the full registered street address and postcode.
 
-A page that names a different organisation number without ours is rejected, and so is any page listing three or more other organisation numbers (directories, supplier and client lists), even when ours is among them. Parked, for-sale, placeholder and empty pages never count. If the site is not exclusive to the company (another organisation number appears on it), only the website itself is published and the facts derived from it are withheld as `ambiguous`.
+A page that names a different organisation number without ours is rejected, and so is any page listing three or more other organisation numbers (directories, supplier and client lists), even when ours is among them. Without our organisation number on the site, a site that presents a longer company name built on ours (Sildakongen Produksjon AS for Sildakongen AS) and never our own legal name belongs to a sister company and is rejected. A subsidiary whose only proof is on its parent's site gets a `related_website` claim labelled as the group's site, `official_website` is marked `ambiguous`, and nothing else is taken from that site. On such weaker sites, and on any site of a company in a group, a news item must name the company (its number or every distinctive word of its name). Parked, for-sale, placeholder and empty pages never count. If the site is not exclusive to the company (another organisation number appears on it), only the website itself is published and the facts derived from it are withheld as `ambiguous`.
 
 ## Refresh
 
@@ -97,7 +97,7 @@ A model can write the summary instead of the template when `VARDE_LLM_PROVIDER` 
 
 ## Budget and cost
 
-All requests go through one client with a batch request cap, a per-company cap, a wall-clock budget, per-host concurrency limits, robots.txt checks on every redirect hop and refusal of private or loopback addresses. Batch sources (GLEIF, Wikidata, TED, the update feed) use one request per chunk of companies. A 100-company random sample takes about 20 seconds and 600 requests.
+All requests go through one client with a batch request cap, a per-company cap, a wall-clock budget, per-host concurrency limits, robots.txt checks on every redirect hop and refusal of private or loopback addresses. Batch sources (GLEIF, Wikidata, TED, the update feed) use one request per chunk of companies. A 100-company random sample takes about 80 seconds and 900 requests; 1,000 companies take about 17 minutes and 8,800 requests.
 
 | Item | Cost |
 |---|---|
@@ -109,11 +109,15 @@ All requests go through one client with a batch request cap, a per-company cap, 
 
 | File | Contents | Rebuild |
 |---|---|---|
-| `src/varde/data/nav_index.json.gz` | Active NAV job ads by employer organisation number, with the feed cursor. At run time Varde reads the feed from that cursor to its live end, drops ads that closed, adds new ads for batch companies, and re-fetches every matched ad; only active ads are published | `scripts/build_nav_index.py` |
+| `src/varde/data/nav_index.json.gz` | Active NAV job ads by employer organisation number, built from the last twelve months of the feed, with the feed cursor. At run time Varde reads the feed from that cursor to its live end, drops ads that closed, adds new ads for batch companies, and re-fetches every matched ad; only active ads are published | `scripts/build_nav_index.py` |
 | `src/varde/data/nace_en.json` | English names of industry codes from Statistics Norway's Klass API (classification 6), CC BY 4.0 | `curl "https://data.ssb.no/api/klass/v1/classifications/6/codes.json?from=2025-01-01&language=en"` |
 | `src/varde/data/website_seeds.json.gz` | Candidate website domains by organisation number, with a source tag per domain. Only organisation number, domain and tag are stored | `scripts/crawl_candidates.py`, `scripts/search_candidates.py`, then `scripts/build_website_seeds.py` |
 
 How the website seeds are built. A polite crawl (robots.txt obeyed, front page plus at most one contact or legal page, one request at a time per host, user agent `VardeCacheBuilder/1.0`) covered the `.no` hosts in three Common Crawl indexes (CC-MAIN-2026-30, -34, -39, used under the Common Crawl terms of use), the websites and email domains the register lists for universe companies, and domains derived from distinctive legal names. From each page it kept only identifiers: labelled organisation numbers, phone numbers and email addresses. A domain becomes a candidate when it prints the company's organisation number, or shows a phone or email the register lists for exactly that one entity, or is the email domain the register lists for the company. Pages printing more than four organisation numbers are dropped. For companies with ten or more employees and no website in the register, a search API was queried once with the legal name and town; result domains carrying a distinctive part of the name were kept as candidates, without titles or snippets. Seeds are candidates only: the run fetches each one live and publishes it only with proof on the site itself.
+
+## Precision
+
+[EVAL.md](EVAL.md) is a hand check of 141 published facts from a random 1,000-company run, by source type, with what was wrong and what changed.
 
 ## Tests
 

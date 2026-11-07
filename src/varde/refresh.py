@@ -10,6 +10,8 @@
 """
 from __future__ import annotations
 
+from datetime import datetime
+
 import copy
 from typing import Any
 
@@ -51,6 +53,20 @@ def _describe(value: Any) -> str:
     return str(value)
 
 
+def _match_key(c: dict) -> str:
+    """Links to another entity match on that entity, so a moved start date is not a new link."""
+    v = c.get("value")
+    if isinstance(v, dict) and c.get("field") == "registry_update" and v.get("date"):
+        try:  # the same register event in UTC or Norwegian time is one event
+            when = datetime.fromisoformat(v["date"].replace("Z", "+00:00")).timestamp()
+        except ValueError:
+            when = v["date"]
+        return f"registry_update|{when}|{v.get('type')}"
+    if isinstance(v, dict) and v.get("organisation_number"):
+        return f"{c['field']}|{v['organisation_number']}|{v.get('relation') or v.get('role') or ''}"
+    return c["claim_key"]
+
+
 def _evidence_for(env_or_profile: Any, claim: dict) -> list[dict]:
     evidence = env_or_profile["evidence"] if isinstance(env_or_profile, dict) else env_or_profile.evidence
     ids = set(claim.get("evidence_ids") or [])
@@ -89,8 +105,8 @@ def diff(p: Profile, previous: dict | None) -> None:
     for field in sorted(set(by_field_prev) | set(by_field_cur)):
         prev_list = by_field_prev.get(field, [])
         cur_list = by_field_cur.get(field, [])
-        prev_keys = {c["claim_key"]: c for c in prev_list}
-        cur_keys = {c["claim_key"]: c for c in cur_list}
+        prev_keys = {_match_key(c): c for c in prev_list}
+        cur_keys = {_match_key(c): c for c in cur_list}
         source_failed = field in failed_fields or (prev_list and prev_list[0]["section"] in failed_sections and not cur_list)
         if source_failed and prev_list and not cur_list:
             for c in prev_list:
