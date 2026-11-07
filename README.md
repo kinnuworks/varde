@@ -31,6 +31,8 @@ uv run --frozen varde run --organisations smoke/companies.jsonl --bulk brreg-enh
 
 Other options: `--previous <envelopes.jsonl>` diffs against an earlier run; `--state-dir <dir>` keeps run history and diffs against the latest run automatically; `--max-requests`, `--time-budget` (seconds, default 2400), `--per-company-requests` (default 40) and `--concurrency` (default 24) set the budgets. The same budgets can be set with `VARDE_MAX_REQUESTS`, `VARDE_TIME_BUDGET`, `VARDE_PER_COMPANY` and `VARDE_CONCURRENCY`.
 
+A run never ends without its envelopes. Each company's envelope is appended to the output file as soon as that company is done, so even a killed process leaves the finished ones. On SIGTERM or SIGINT, or 30 seconds past the time budget (`VARDE_HARD_STOP_GRACE`), Varde stops and writes one envelope for every input: finished companies keep everything, unfinished ones keep what was already proven and mark the remaining steps `failed` with the reason.
+
 ## Output
 
 Written next to `--output`:
@@ -80,7 +82,7 @@ Not used: aggregators whose terms forbid automated copying (Proff, Forvalt, 1881
 
 ## How a website is proven
 
-Candidates come from the register's website field, the register's email domain, Wikidata, NAV employer homepages, the declared seed cache and a domain derived from a distinctive legal name. None of these is evidence. A candidate is fetched live and published only when the site itself shows one of:
+Candidates come from the register's website field, the register's email domain, Wikidata, NAV employer homepages, the declared seed cache, domains derived from a distinctive legal name (the whole name, its first distinctive word, or the name itself when it is a domain such as INNREGISTRERING.NO AS). A domain that does not resolve is tried again with or without `www`. None of these is evidence. A candidate is fetched live, with its contact, about, terms and privacy pages when the front page lacks proof, and published only when the site itself shows one of:
 
 1. our organisation number (the strongest proof, and the most common);
 2. the registry phone or email together with the legal name;

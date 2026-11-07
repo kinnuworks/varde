@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import gzip
 import json
 import os
@@ -74,6 +75,83 @@ def envelope(p: Profile, completed_at: str, ops: dict, status: str = "completed"
     }
 
 
+def build_envelope(p: Profile, previous: dict | None, completed_at: str, budget: Budget,
+                   timing: dict[str, int], *, do_diff: bool = True) -> dict:
+    """Diff, summary and operations for one profile, then its terminal envelope."""
+    if do_diff:
+        diff(p, previous)
+    if "summary" not in p.context:
+        p.context["summary"] = template(p)
+    org = p.organisation_number
+    ops = {"requests": budget.by_company.get(org, 0), "runtime_ms": timing.get(org),
+           "third_party_cost_usd": 0, "llm_calls": 1 if "model" in str(p.context["summary"].get("writer", "")) else 0}
+    return envelope(p, completed_at, ops, "completed" if p.legal_name else "failed")
+
+
+class Checkpoint:
+    """Appends a provisional envelope as each company finishes, so a killed run still leaves results.
+
+    The final write replaces this file in one step."""
+
+    def __init__(self, path: Path | None) -> None:
+        self.handle = path.open("w", encoding="utf-8") if path else None
+
+    def add(self, p: Profile, previous: dict | None, budget: Budget, timing: dict[str, int]) -> None:
+        if not self.handle:
+            return
+        try:
+            env = build_envelope(copy.deepcopy(p), previous, utc_now(), budget, timing)
+            self.handle.write(json.dumps(env, ensure_ascii=False, separators=(",", ":")) + "\n")
+            self.handle.flush()
+        except Exception:  # a checkpoint must never fail the run
+            pass
+
+    def close(self) -> None:
+        if self.handle:
+            self.handle.close()
+            self.handle = None
+
+
+def stop_envelopes(live: dict, reason: str) -> list[dict]:
+    """Terminal envelopes for every input when the run is stopped early (signal or time limit)."""
+    orgs, profiles, done = live.get("orgs", []), live.get("profiles", {}), live.get("done", set())
+    budget = live.get("budget") or Budget(1, 0, 1)
+    timing, previous, run_id = live.get("timing", {}), live.get("previous", {}), live.get("run_id", "")
+    completed = utc_now()
+    out = []
+    for org in orgs:
+        p = profiles.get(org) or Profile(org, run_id)
+        if org not in done:
+            p.error("pipeline", f"Run stopped before this company finished: {reason}.")
+            if not valid_orgnr(org) and "identity" not in p.sections:
+                p.mark("identity", "failed", "Input is not a valid Norwegian organisation number.")
+            for section in ("identity", "web_presence", "activity"):
+                if section not in p.sections:
+                    p.mark(section, "failed", f"Run stopped before this step finished: {reason}.")
+        try:
+            out.append(build_envelope(p, previous.get(org), completed, budget, timing,
+                                      do_diff=not live.get("diffed")))
+        except Exception as exc:  # never drop an input
+            bare = Profile(org, run_id)
+            bare.error("pipeline", f"{type(exc).__name__}: {exc}")
+            bare.mark("identity", "failed", "Envelope could not be built after the run stopped.")
+            out.append(build_envelope(bare, None, completed, budget, timing))
+    return out
+
+
+def stop_report(live: dict, reason: str, envelopes: list[dict]) -> dict:
+    budget = live.get("budget")
+    return {
+        "agent": AGENT_NAME, "version": __version__, "commit": _commit(), "run_id": live.get("run_id"),
+        "started_at": live.get("started"), "completed_at": utc_now(), "stopped_early": reason,
+        "expected_count": len(live.get("orgs", [])), "emitted_envelopes": len(envelopes),
+        "companies_finished": len(live.get("done", ())),
+        "requests": budget.used if budget else 0,
+        "requests_by_host": dict(sorted(budget.by_host.items(), key=lambda x: -x[1])[:25]) if budget else {},
+        "third_party_cost_usd": 0, "runtime_s": None, "p50_ms": None, "p95_ms": None,
+    }
+
+
 async def research(p: Profile, f: Fetcher, shared: dict, previous: dict | None) -> None:
     org = p.organisation_number
     rec = await brreg.entity(p, f)
@@ -97,10 +175,18 @@ async def research(p: Profile, f: Fetcher, shared: dict, previous: dict | None) 
 
 
 async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: dict[str, dict],
-                    max_requests: int, time_budget: float, per_company: int, concurrency: int) -> tuple[list[dict], dict]:
+                    max_requests: int, time_budget: float, per_company: int, concurrency: int,
+                    live: dict | None = None, checkpoint: Path | None = None) -> tuple[list[dict], dict]:
     started = utc_now()
     t0 = time.monotonic()
     budget = Budget(max_requests, time_budget, per_company)
+    profiles: dict[str, Profile] = {}
+    timing: dict[str, int] = {}
+    done: set[str] = set()
+    if live is not None:
+        live.update(orgs=orgs, profiles=profiles, timing=timing, done=done, budget=budget,
+                    previous=previous, run_id=run_id, started=started)
+    cp = Checkpoint(checkpoint)
     store = SnapshotStore(out_dir / "snapshots")
     fetcher = Fetcher(store, budget)
     valid = [o for o in orgs if valid_orgnr(o)]
@@ -118,8 +204,6 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
     await nav.refresh(fetcher, names)
     shared = {"gleif": gleif, "wikidata": wikidata, "ted": ted, "updates": updates, "nav": nav, "seeds": _load_seeds()}
     sem = asyncio.Semaphore(concurrency)
-    profiles: dict[str, Profile] = {}
-    timing: dict[str, int] = {}
 
     async def one(org: str) -> None:
         p = Profile(org, run_id)
@@ -127,6 +211,8 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
         if not valid_orgnr(org):
             p.error("input", f"Invalid organisation number: {org!r}")
             p.mark("identity", "failed", "Input is not a valid Norwegian organisation number.")
+            done.add(org)
+            cp.add(p, previous.get(org), budget, timing)
             return
         async with sem:
             start = time.monotonic()
@@ -141,6 +227,8 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
                 p.error("pipeline", f"{type(exc).__name__}: {exc}")
                 p.mark("identity", "failed", "Unexpected error while researching this company.")
             timing[org] = int((time.monotonic() - start) * 1000)
+        done.add(org)
+        cp.add(p, previous.get(org), budget, timing)
 
     await asyncio.gather(*(one(o) for o in orgs))
     retry = [profiles[o] for o in orgs if profiles[o].context.pop("web_retry", False)]
@@ -158,8 +246,11 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
                     p.mark_field("official_website", "web_presence", "failed", "Website step timed out twice.")
         await asyncio.gather(*(again(p) for p in retry))
     await fetcher.close()
+    cp.close()
     for org in orgs:
         diff(profiles[org], previous.get(org))
+    if live is not None:
+        live["diffed"] = True
     llm_calls = 0
     if writer.enabled() and budget.remaining_s() > 120:
         wsem = asyncio.Semaphore(int(os.environ.get("VARDE_LLM_CONCURRENCY", "24")))
@@ -168,21 +259,13 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
                 nonlocal llm_calls
                 async with wsem:
                     if budget.remaining_s() < 60:
-                        p.context["summary"] = template(p)
                         return
                     llm_calls += 1
                     p.context["summary"] = await writer.write(p, client)
             await asyncio.gather(*(summarise(profiles[o]) for o in orgs))
     completed = utc_now()
-    envelopes = []
-    for org in orgs:
-        p = profiles[org]
-        if "summary" not in p.context:
-            p.context["summary"] = template(p)
-        ops = {"requests": budget.by_company.get(org, 0), "runtime_ms": timing.get(org),
-               "third_party_cost_usd": 0, "llm_calls": 1 if "model" in str(p.context["summary"].get("writer", "")) else 0}
-        status = "completed" if p.legal_name else "failed"
-        envelopes.append(envelope(p, completed, ops, status))
+    envelopes = [build_envelope(profiles[org], previous.get(org), completed, budget, timing, do_diff=False)
+                 for org in orgs]
     lat = sorted(timing.values())
     report = {
         "agent": AGENT_NAME, "version": __version__, "commit": _commit(), "run_id": run_id,

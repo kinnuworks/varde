@@ -89,6 +89,17 @@ GENERIC_WORDS = {"holding", "invest", "eiendom", "service", "consulting", "bygg"
                  "maskin", "elektro", "entreprenør", "rør", "vvs", "tak", "trans", "shipping", "energi", "film", "musikk"}
 
 
+TAG_LINK = re.compile(r"([?&](tag|tags|category|cat|kategori)=|/(tag|tags|category|categories|kategori|emne|stikkord)/)", re.I)
+NAME_IS_DOMAIN = re.compile(r"\b([a-z0-9æøå][a-z0-9æøå-]{2,}\.(?:no|com|as|net|org))\b", re.I)
+FIRST_WORD_STOP = {"norsk", "norske", "norges", "nord", "sor", "vest", "ost", "oslo", "bergen", "stavanger",
+                   "trondheim", "tromso", "eiendomsselskap", "eiendomsselskapet", "aksjeselskap", "selskapet",
+                   "restaurant", "services", "autoservice", "bilservice", "byggservice", "maskinservice",
+                   "stiftelsen", "foreningen", "borettslag", "sameiet", "takst", "frisor", "tannlege", "advokat",
+                   "advokatfirma", "advokatfirmaet", "regnskapskontor", "elektriker", "snekker", "maler",
+                   "rorlegger", "landbruk", "gard", "garden", "hotell", "kafe", "pizza", "sushi", "taxi", "transport",
+                   "first", "best", "super", "global", "international", "scandinavia", "scandinavian", "europe", "new"}
+
+
 @dataclass
 class Candidate:
     url: str
@@ -341,6 +352,9 @@ def candidates(p: Profile, seeds: dict[str, list[str]] | None, nav_homepages: li
         out.append(Candidate(norm, source))
 
     add(rec.get("hjemmeside"), "registry_website")
+    named_dom = NAME_IS_DOMAIN.search(p.legal_name or "")
+    if named_dom:  # "INNREGISTRERING.NO AS": the name itself is a domain
+        add(named_dom.group(1).lower(), "name_derived")
     email = (rec.get("epostadresse") or "").lower()
     reg_dom = registered_domain(rec.get("hjemmeside") or "") if rec.get("hjemmeside") else None
     local = email.split("@", 1)[0] if "@" in email else ""
@@ -374,7 +388,11 @@ def candidates(p: Profile, seeds: dict[str, list[str]] | None, nav_homepages: li
                 add(f"{v}.no", "name_derived")
         if len(slug) >= 6:
             add(f"{slug}.com", "name_derived")
-    return out[:8]
+        # The first distinctive word alone is often the brand ("KREDAH INKASSO AS" on kredah.no).
+        first = next((w for w in words if w not in GENERIC_WORDS and w not in FIRST_WORD_STOP and len(w) >= 4), None)
+        if first and len(words) > 1:
+            add(f"{first}.no", "name_derived")
+    return out[:10]
 
 
 # ---------------------------------------------------------------- mining
@@ -879,6 +897,8 @@ def _listing_news(lv: PageView, founded: str | None) -> list[tuple[str, str, Pag
             continue
         if press_path and not urlsplit(href).path.startswith(press_path.rsplit("/", 1)[0]):
             continue
+        if TAG_LINK.search(href):  # tag and category pages are labels, not articles
+            continue
         title_txt = re.sub(r"\s+", " ", a.text()).strip()
         head = node.css_first("h1, h2, h3, h4")
         if head and len(head.text().strip()) >= 12:
@@ -1051,6 +1071,14 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
     rejected: list[str] = []
     for cand in cands:
         snap = await f.get(cand.url, company=org)
+        if isinstance(snap, FetchError) and snap.reason in ("dns_or_private_address", "network"):
+            # Many small sites answer only on www, or only on the bare domain.
+            parts = urlsplit(cand.url)
+            host = parts.hostname or ""
+            alt_host = host[4:] if host.startswith("www.") else "www." + host
+            alt = await f.get(parts._replace(netloc=alt_host).geturl(), company=org)
+            if not isinstance(alt, FetchError):
+                snap = alt
         if isinstance(snap, FetchError) and snap.reason in ("network", "timeout") and cand.url.startswith("https://"):
             snap = await f.get("http://" + cand.url[len("https://"):], company=org)
         if isinstance(snap, FetchError):
@@ -1070,19 +1098,23 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
             for a, _r, t in pv.links:
                 if registered_domain(a) != registered_domain(snap.final_url) or a in links:
                     continue
-                if re.search(r"(kontakt|contact|om-oss|om_oss|about|personvern|privacy|salgsbetingelser|vilkar|vilkår|"
-                             r"policies/|terms|impressum|kjopsvilkar|kjøpsvilkår)", a, re.I):
+                if re.search(r"(kontakt|contact|om-oss|om_oss|/om/?$|about|hvem-er-vi|personvern|privacy|cookie|"
+                             r"salgsbetingelser|betingelser|vilkar|vilkår|angrerett|kundeservice|"
+                             r"policies/|terms|impressum|kjopsvilkar|kjøpsvilkår|firma|selskapet)", a, re.I):
                     links.append(a)
             def rank(a: str) -> int:
                 if re.search(r"kontakt|contact", a, re.I):
                     return 0
-                if re.search(r"kjopsvilkar|kjøpsvilkår|salgsbetingelser|vilkar|vilkår|terms|policies/", a, re.I):
+                if re.search(r"kjopsvilkar|kjøpsvilkår|betingelser|vilkar|vilkår|terms|policies/|angrerett", a, re.I):
                     return 1
-                if re.search(r"om-oss|om_oss|about", a, re.I):
+                if re.search(r"om-oss|om_oss|/om/?$|about|hvem-er-vi|firma|selskapet", a, re.I):
                     return 2
                 return 3
             links.sort(key=rank)
-            for link in links[:4]:
+            if not links and reason.startswith("name visible"):  # pages built by scripts often hide their footer links; try the usual contact paths
+                base = f"{urlsplit(snap.final_url).scheme}://{urlsplit(snap.final_url).netloc}"
+                links = [base + "/kontakt", base + "/kontakt-oss"]
+            for link in links[:6]:
                 csnap = await f.get(link, company=org)
                 if isinstance(csnap, FetchError):
                     continue

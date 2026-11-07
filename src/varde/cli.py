@@ -5,10 +5,11 @@ import argparse
 import asyncio
 import json
 import os
+import signal
 import sys
 from pathlib import Path
 
-from .pipeline import coverage, load_previous, run_batch, save_state, validate
+from .pipeline import coverage, load_previous, run_batch, save_state, stop_envelopes, stop_report, validate
 from .util import read_inputs, utc_now, write_jsonl
 
 
@@ -69,9 +70,38 @@ def main(argv: list[str] | None = None) -> None:
     previous = load_previous(args.previous, args.state_dir)
     max_requests = args.max_requests or max(2000, 40 * len(orgs))
 
-    envelopes, report = asyncio.run(run_batch(
-        orgs, out_dir, run_id, previous=previous, max_requests=max_requests, time_budget=args.time_budget,
-        per_company=args.per_company_requests, concurrency=args.concurrency))
+    live: dict = {}
+
+    async def guarded() -> tuple[list[dict], dict]:
+        loop = asyncio.get_running_loop()
+        task = asyncio.current_task()
+
+        def on_signal(name: str) -> None:
+            live.setdefault("stop_reason", f"received {name}")
+            task.cancel()
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            try:
+                loop.add_signal_handler(sig, on_signal, sig.name)
+            except (NotImplementedError, RuntimeError):
+                pass
+        # Hard stop a little after the time budget, so a slow source can never cost the whole batch.
+        return await asyncio.wait_for(run_batch(
+            orgs, out_dir, run_id, previous=previous, max_requests=max_requests, time_budget=args.time_budget,
+            per_company=args.per_company_requests, concurrency=args.concurrency, live=live, checkpoint=out),
+            timeout=args.time_budget + float(os.environ.get("VARDE_HARD_STOP_GRACE", "30")))
+
+    stopped = None
+    try:
+        envelopes, report = asyncio.run(guarded())
+    except (asyncio.CancelledError, TimeoutError, asyncio.TimeoutError, KeyboardInterrupt):
+        stopped = live.get("stop_reason") or "time limit reached"
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)  # finish writing the envelopes
+        envelopes = stop_envelopes(live, stopped) if live.get("orgs") else []
+        if not envelopes:  # stopped before the batch started: still one envelope per input
+            live.update(orgs=orgs, run_id=run_id)
+            envelopes = stop_envelopes(live, stopped)
+        report = stop_report(live, stopped, envelopes)
+        print(f"warning: run stopped early ({stopped}); wrote {len(envelopes)} envelopes", file=sys.stderr)
 
     write_jsonl(out, envelopes)
     write_jsonl(Path(args.profiles_output) if args.profiles_output else out_dir / "profiles.jsonl",
@@ -80,9 +110,9 @@ def main(argv: list[str] | None = None) -> None:
     report["validation"] = validate(envelopes, orgs)
     report["changes"] = sum(len(e["changes"]) for e in envelopes)
     Path(args.report or out_dir / "run-report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
-    if args.state_dir:
+    if args.state_dir and not stopped:
         save_state(args.state_dir, envelopes, run_id)
-    if not args.no_html:
+    if not args.no_html and not stopped:
         try:
             from .report import write_report
             slim = []
