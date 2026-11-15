@@ -792,7 +792,7 @@ function howEl(c){const e=c.e,w=c.by.official_website||[],wa=w.find(x=>x.availab
    return h('li',{class:on?'y':'n'},on?IC.check():IC.dash(),h('span',null,t),h('span',{class:'v'},on?(k==='activity'?hireTxt(c):'Found'):k==='activity'&&av(c,'hiring_signal').length?'Careers page only':s==='ambiguous'?'Ambiguous':SL[s]||'Not found'))})),
   done?h('p',{class:'muted',style:'margin-top:18px;font-size:12.5px'},'Last checked ',h('span',{class:'num'},dt(done))):null)}
 function viewProfile(id,tab){const c=BY[id];if(!c)return [h('section',{class:'wrap pad'},h('div',{class:'card empty'},'No company with organisation number '+id+' is in this run. ',h('a',{href:'#/'},'Back to all companies')))];
- store('varde-last',id);const e=c.e,sm=e.summary||{},ss=sm.sentences||[],un=sm.unknowns||[];
+ store('varde-last',id);const e=c.e,sm=e.synthesis||e.summary||{},ss=sm.sentences||[],un=sm.unknowns||[];
  const sum=h('div',{class:'card box rv'},h('span',{class:'eyebrow'},'Summary'),h('h2',null,'What the sources say'),h('p',{class:'cap'},'Written from the facts below. Each sentence links to its sources.'),
   ss.length?h('div',{class:'lede'},h('span',{class:'first'},sentNodes(c,ss[0])),ss.length>1?h('p',{class:'rest'},ss.slice(1).map((s,i)=>[i?' ':'',sentNodes(c,s)])):null):h('p',{class:'lede st'},sm.text||'No summary was produced for this company.'),
   un.length?h('details',{class:'unk',open:true},h('summary',null,'What we could not confirm ('+un.length+')'),h('ul',null,un.map(u=>h('li',null,u)))):null);

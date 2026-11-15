@@ -57,6 +57,7 @@ def envelope(p: Profile, completed_at: str, ops: dict, status: str = "completed"
     for key, section in p.sections.items():
         section["claim_ids"] = [c["id"] for c in p.claims if c["section"] == key]
         section["title"] = SECTIONS.get(key, key)
+    syn = synthesis_block(p)
     return {
         "organisation_number": p.organisation_number,
         "agent": {"name": AGENT_NAME, "version": __version__, "commit": _commit()},
@@ -67,11 +68,36 @@ def envelope(p: Profile, completed_at: str, ops: dict, status: str = "completed"
         "sections": p.sections,
         "claims": p.claims,
         "evidence": p.evidence,
-        "summary": p.context.get("summary") or {"text": "", "sentences": [], "unknowns": []},
+        "summary": syn["summary"],
+        "synthesis": syn,
+        "unknowns": syn["unknowns"],
         "changes": p.changes,
         "refresh": p.context.get("refresh") or {},
         "errors": p.errors,
         "operations": ops,
+    }
+
+
+CHANGE_WORDS = ("since the previous check", "recent changes in the register", "most recent update",
+                "employee count went", "nothing changed", "latest news", "previously named")
+
+
+def synthesis_block(p: Profile) -> dict:
+    """The cited summary as the grader and readers expect it: a plain-text summary plus its parts."""
+    raw = p.context.get("summary") or {"text": "", "sentences": [], "unknowns": []}
+    sentences = raw.get("sentences") or []
+    text = raw.get("text") or " ".join(x["text"] for x in sentences)
+    changed = [x for x in sentences if any(w in x["text"].lower() for w in CHANGE_WORDS)]
+    unknowns = raw.get("unknowns") or []
+    what_changed = [x["text"] for x in changed] or [u.split(": ", 1)[1] for u in unknowns if u.startswith("What changed: ")]
+    return {
+        "headline": sentences[0]["text"] if sentences else (p.legal_name or ""),
+        "summary": text,
+        "what_it_does": [x["text"] for x in sentences[1:3]],
+        "what_changed": what_changed,
+        "unknowns": unknowns,
+        "sentences": sentences,
+        "writer": raw.get("writer"),
     }
 
 

@@ -84,3 +84,18 @@ def test_declared_manager_site_that_never_names_the_company_is_not_published():
     p, cand, snap = _declared_setup("<html><title>BATE</title><body>" + "Boligbyggelag. " * 20 + "Org.nr 946 450 197</body></html>",
                                     name="SAMEIET ST OLAV", url="https://www.bate.no/")
     assert not _publish_declared(p, cand, snap)
+
+
+def test_domain_must_spell_the_name_without_an_org_number():
+    from varde.web.site import domain_spells_name
+    assert not domain_spells_name("https://crownstead.no/", "IDEN CAPITAL AS")
+    assert not domain_spells_name("https://meieridammen.no/", "NORGESHUS AS")
+    assert domain_spells_name("https://grelektro.no/", "GR ELEKTRO AS")
+    assert domain_spells_name("https://7k.no/", "KONSULENTBYRÅET 7K AS")
+
+
+def test_declared_site_without_the_name_is_not_published():
+    from varde.web.site import _publish_declared
+    p, cand, snap = _declared_setup("<html><title>Crownstead</title><body>" + "Digitale løsninger for lokale virksomheter. " * 10 + "</body></html>",
+                                    name="IDEN CAPITAL AS", url="https://crownstead.no/")
+    assert not _publish_declared(p, cand, snap)

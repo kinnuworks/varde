@@ -24,7 +24,7 @@ def _load_env() -> None:
 
 def flatten(env: dict) -> dict:
     row: dict = {"organisation_number": env["organisation_number"], "legal_name": env.get("legal_name"),
-                 "summary": env["summary"].get("text"), "unknowns": env["summary"].get("unknowns")}
+                 "summary": env["summary"], "unknowns": env["unknowns"]}
     for c in env["claims"]:
         if c["availability"] != "available":
             row.setdefault("states", {})[c["field"]] = {"state": c["availability"], "reason": c.get("reason")}

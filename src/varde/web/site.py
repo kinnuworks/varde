@@ -857,7 +857,8 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
         p.add_claim("dated_news", "activity", f"{title_txt} ({when})", [ev(pv, raw)], as_of=when[:10],
                     label="Dated news from the company's own website",
                     match={"method": "verified_site", "detail": site_dom},
-                    extra={"title": title_txt, "published": when, "url": href})
+                    extra={"title": title_txt, "published": when, "published_at": when, "url": href,
+                           "source_url": href or pv.snap.final_url})
 
 
 MONTHS = {"januar": 1, "january": 1, "jan": 1, "februar": 2, "february": 2, "feb": 2, "mars": 3, "march": 3, "mar": 3,
@@ -1073,6 +1074,19 @@ async def name_unique(p: Profile, f: Fetcher) -> bool | None:
     return not others
 
 
+def domain_spells_name(url: str, legal_name: str) -> bool:
+    """The domain carries a distinctive word of the legal name, the whole name, or its initials."""
+    label = ascii_slug((registered_domain(url) or "").split(".")[0])
+    words = [ascii_slug(w) for w in core_name(legal_name).split() if ascii_slug(w)]
+    if not label or not words:
+        return False
+    if "".join(words) in label or label in "".join(words) and len(label) >= 4:
+        return True
+    if len(words) > 1 and "".join(w[0] for w in words) == label:
+        return True
+    return any(w in label for w in words if (len(w) >= 3 or any(ch.isdigit() for ch in w)) and w not in GENERIC_WORDS)
+
+
 def _publish_declared(p: Profile, cand: Candidate, snap: Snapshot) -> bool:
     """The company declared this website in Enhetsregisteret and it is live, but the site itself does not
     prove the organisation number (often a group, chain or manager site). Publish it on the register's word,
@@ -1092,10 +1106,8 @@ def _publish_declared(p: Profile, cand: Candidate, snap: Snapshot) -> bool:
     trade = GENERIC_WORDS | FIRST_WORD_STOP | {"barnehage", "barnehager", "skole", "kommune", "legat", "legata", "sameie",
                                                "borettslag", "boligsameie", "klinikk", "senter", "stiftelse"}
     spelled = any(w in label for w in words if w not in trade)
-    if not (shown or spelled):
-        return False  # a site that neither names this company nor spells it: often a manager or landlord
-    if others and not shown:
-        return False
+    if not shown:
+        return False  # the register's word alone is not enough: the site must name this company
     span = json_span(esnap.text, "hjemmeside", reg)
     if not span:
         return False
@@ -1218,6 +1230,15 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
                 if foreign and org not in _all:
                     rejected.append(f"{cand.url}: the contact page names other organisation number(s) {sorted(foreign)[:2]}")
                     continue
+        # Final tie check: the site itself must show this company's organisation number or its legal name.
+        tie_text = pv.text + " " + (contact_pv.text if contact_pv is not None else "")
+        title = pv.tree.css_first("title")
+        if proof.method != "orgnr_on_page" and not name_visible(tie_text + " " + (title.text() if title else ""), p.legal_name or ""):
+            rejected.append(f"{cand.url}: the site shows neither the organisation number nor the legal name")
+            continue
+        if proof.method != "orgnr_on_page" and cand.source != "registry_website" and not domain_spells_name(snap.final_url, p.legal_name or ""):
+            rejected.append(f"{cand.url}: the domain does not match the company name and the site does not print the organisation number")
+            continue
         proof_pv = contact_pv if contact_pv and proof else pv
         e = p.add_evidence(proof_pv.snap, source_class="company_owned", span=proof.span, method="website_identity_v1",
                            licence="Company-owned page; quoted as identity proof",
@@ -1230,13 +1251,10 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
         # A subsidiary given its parent's site is the risk; a parent's own site is its own.
         in_group = bool(p.context.get("group_parent"))
         if in_group and proof.strength < 3 and cand.source != "registry_website":
-            p.add_claim("related_website", "web_presence", dom, [e],
-                        label="Website of the group this company belongs to",
-                        match={"method": proof.method, "detail": proof.detail + "; the company is part of a group and its own organisation number is not on the site",
-                               "candidate_source": cand.source},
-                        extra={"url": snap.final_url, "exclusive": False})
+            # A group site is not this company's website, and publishing it under this company's name
+            # reads as a wrong-company claim. Say what was found, publish nothing.
             p.mark_field("official_website", "web_presence", "ambiguous",
-                         "The site found belongs to the company's group; its own organisation number is not on it.")
+                         f"The site found ({dom}) belongs to the company's group; its own organisation number is not on it.")
             return
         p.context["strict_site"] = proof.strength < 3 or bool(rec_e.get("erIKonsern"))
         excl, why = exclusive(p, pv)
@@ -1269,15 +1287,6 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
         p.context["web_retried"] = True
     reg = (p.context.get("entity") or {}).get("hjemmeside")
     esnap = p.context.get("entity_snap")
-    if reg and esnap is not None and any(r.startswith(normalise_url(reg) or "~") and "other organisation" in r for r in rejected):
-        from ..profile import json_span
-        e = p.add_evidence(esnap, source_class="official_registry", span=json_span(esnap.text, "hjemmeside", reg),
-                           method="brreg_entity_v1", licence="NLOD 2.0 (Brønnøysundregistrene)",
-                           note="The register declares this website; the site itself names another organisation (often a manager or parent).")
-        p.add_claim("related_website", "web_presence", registered_domain(normalise_url(reg) or reg),
-                    [e], label="Website declared in the register, run by another organisation",
-                    match={"method": "declared_in_register", "detail": "hjemmeside; site names another organisation number"},
-                    extra={"exclusive": False, "url": normalise_url(reg)})
     if rejected and all(r.endswith(": blocked_robots") for r in rejected):
         state = "blocked"
     elif any("name visible but" in r or "other organisation" in r or "another organisation" in r
