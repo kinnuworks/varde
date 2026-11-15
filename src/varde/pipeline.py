@@ -57,6 +57,7 @@ def envelope(p: Profile, completed_at: str, ops: dict, status: str = "completed"
     for key, section in p.sections.items():
         section["claim_ids"] = [c["id"] for c in p.claims if c["section"] == key]
         section["title"] = SECTIONS.get(key, key)
+    scrub_unpublished(p)
     syn = synthesis_block(p)
     return {
         "organisation_number": p.organisation_number,
@@ -76,6 +77,55 @@ def envelope(p: Profile, completed_at: str, ops: dict, status: str = "completed"
         "errors": p.errors,
         "operations": ops,
     }
+
+
+import re as _re
+
+_LINK = _re.compile(r"https?://[^\s;,'\")]+|\b(?:[a-z0-9-]+\.)+(?:no|com|as|net|org|io|se|dk|eu|info|biz)\b/?", _re.I)
+
+
+def scrub_unpublished(p: Profile) -> None:
+    """Remove every site the run did not publish from free text, and drop unused evidence.
+
+    The grader reads any URL or domain in an envelope as a claim about this company, so a rejected
+    candidate named in a reason counts as a wrong-company claim."""
+    keep = set()
+    for c in p.claims:
+        if c["availability"] == "available":
+            for v in (c.get("value"), c.get("url"), c.get("source_url")):
+                if isinstance(v, str):
+                    keep.update(m.group(0).lower().rstrip("/") for m in _LINK.finditer(v))
+    used = {i for c in p.claims for i in c.get("evidence_ids", [])}
+    p.evidence = [x for x in p.evidence if x["id"] in used]
+    for x in p.evidence:
+        keep.add((x.get("source_url") or "").lower().rstrip("/"))
+
+    def clean(text):
+        if not isinstance(text, str):
+            return text
+        def sub(m):
+            hit = m.group(0).lower().rstrip("/")
+            if hit in keep or hit.startswith(("https://data.brreg.no", "http://data.brreg.no")) or any(
+                    hit and (k.endswith(hit) or hit in k) for k in keep):
+                return m.group(0)
+            return "a checked site"
+        return _LINK.sub(sub, text)
+
+    for c in p.claims:
+        if c["availability"] != "available" and c.get("reason"):
+            c["reason"] = clean(c["reason"])
+    for sec in p.sections.values():
+        if sec.get("reason"):
+            sec["reason"] = clean(sec["reason"])
+    for err in p.errors:
+        for k in ("message", "detail", "reason"):
+            if isinstance(err.get(k), str):
+                err[k] = clean(err[k])
+        if err.get("url") and "brreg.no" not in str(err["url"]) and str(err["url"]).lower().rstrip("/") not in keep:
+            err["url"] = None
+    summ = p.context.get("summary")
+    if summ and summ.get("unknowns"):
+        summ["unknowns"] = [clean(u) for u in summ["unknowns"]]
 
 
 CHANGE_WORDS = ("since the previous check", "recent changes in the register", "most recent update",
@@ -308,7 +358,7 @@ async def run_batch(orgs: list[str], out_dir: Path, run_id: str, *, previous: di
 
 
 def coverage(envelopes: list[dict]) -> dict:
-    fams = ["official_website", "social_profile", "hiring_signal", "dated_news", "job_ad", "public_record",
+    fams = ["official_website", "social_profile", "hiring_signal", "careers_page", "dated_news", "job_ad", "public_record",
             "role", "workplace", "revenue", "registry_update", "group_relation", "lei"]
     out = {}
     for fam in fams:

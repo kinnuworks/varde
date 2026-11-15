@@ -527,8 +527,8 @@ const FIN_L={revenue:'Revenue',sales_revenue:'Sales revenue',operating_result:'O
 const FIN=Object.keys(FIN_L);
 const AREAS=[['identity','Identity'],['financials','Financials'],['leadership','People & places'],['web_presence','Website & profiles'],['activity','Hiring & activity']];
 const CLS={official_registry:'Official registry',company_owned:'Company website',official_api:'Official API',open_knowledge_base:'Open knowledge base'};
-const TLL={job_ad:'Job ad',dated_news:'News',public_record:'Public record',registry_update:'Registry update',hiring_signal:'Careers page'};
-const PEOPLE=['role','roles','workplace'],WEB=['official_website','website_title','website_description','social_profile','related_website'],ACT=['hiring_signal','job_ad','dated_news','public_record','registry_update'];
+const TLL={job_ad:'Job ad',dated_news:'News',public_record:'Public record',registry_update:'Registry update',hiring_signal:'Job posting',careers_page:'Careers page'};
+const PEOPLE=['role','roles','workplace'],WEB=['official_website','website_title','website_description','social_profile','related_website'],ACT=['careers_page','hiring_signal','job_ad','dated_news','public_record','registry_update'];
 const MM={orgnr_on_page:'Organisation number printed on the site',registry_phone_and_name:'Phone number from the register and the company name appear on the site',registry_email_and_name:'Email address from the register and the company name appear on the site',registry_website_and_name:'Website declared in the register and the company name appears on it',name_and_registered_address:'Company name and registered address appear on the site',linked_from_verified_site:'Linked from the verified company website',orgnr_in_request:'Looked up by organisation number in the official register',employer_orgnr_in_ad:'Employer organisation number in the job ad',registeredAs_equals_orgnr:'The record is registered under this organisation number',P2333_equals_orgnr:'Wikidata lists this organisation number for the item',winner_identifier_equals_orgnr:'The winning supplier is identified by this organisation number',buyer_identifier_equals_orgnr:'The buyer is identified by this organisation number',company_board_linked_from_verified_site:'Board page linked from the verified company website',wikidata_item_with_matching_website:'Wikidata item lists the same verified website',verified_site:'Found on the verified company website',declared_in_register:'Declared in the official register',parent_orgnr_in_request:'Looked up by the parent organisation number in the official register',orgnr_in_feed_record:'Organisation number in the source record'};
 function hum(k){return String(k||'').replace(/_/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2').toLowerCase().replace(/^./,x=>x.toUpperCase()).replace(/\b(lei|isin|nace|vat|nav|url|sha|id|api)\b/gi,x=>x.toUpperCase())}
 function mm(m){return MM[m]||hum(m)}
@@ -597,7 +597,7 @@ function fv(c){const v=c.value,f=c.field;if(v==null)return '';
   case 'related_website':return isO(v)?v.domain||v.website||v.url||flat(v):flat(v)}
  if(/^(status_|register_|in_group)/.test(f)&&typeof v==='boolean')return v?'Yes':'No';
  if(f.startsWith('status_')&&typeof v==='boolean')return v?'Yes':'No';return flat(v)}
-function urlOf(c){const v=c.value;return c.url||(isO(v)&&v.url)||((c.field==='official_website'||c.field==='hiring_signal'||c.field==='social_profile')&&typeof v==='string'?v:'')}
+function urlOf(c){const v=c.value;return c.url||(isO(v)&&v.url)||((c.field==='official_website'||c.field==='hiring_signal'||c.field==='careers_page'||c.field==='social_profile')&&typeof v==='string'?v:'')}
 function dateOf(c){const v=c.value;let d=(isO(v)&&(v.published||v.date))||c.published||'';if(!d&&typeof v==='string'){const m=v.match(/\((\d{4}-\d{2}-\d{2})/);if(m)d=m[1]}return d||c.as_of||''}
 function perOf(c){return (isO(c.value)&&c.value.period)||c.reporting_period||''}
 
@@ -649,7 +649,7 @@ function latestCo(c,f){const s=series(c,f);return s.length?s[s.length-1]:latest(
 function numOf(x){return parseFloat(amtOf(x.field,x.value.amount))}
 function cmpGhost(c){const on=CMP.includes(c.id);const b=h('button',{type:'button',class:'ghost','data-cmp':c.id,'data-ghost':'1','aria-pressed':on,'aria-label':(on?'Remove ':'Add ')+c.name+(on?' from':' to')+' compare',onclick:()=>toggleCmp(c.id)});ghostFill(b,on);return b}
 function ghostFill(b,on){rc(b,on?IC.check():IC.plus(),h('span',{class:'gl','aria-hidden':'true'},on?'In compare':'Compare'))}
-function hireTxt(c){const j=av(c,'job_ad').length;return j?j+' open position'+(j===1?'':'s'):av(c,'hiring_signal').length?'Careers page only':'News or records found'}
+function hireTxt(c){const j=av(c,'job_ad').length;return j?j+' open position'+(j===1?'':'s'):av(c,'careers_page').length?'Careers page only':'News or records found'}
 function pl(n,one,many){return n+' '+(n===1?one:many)}
 function sect(code){const d=parseInt(String(code||'').slice(0,2),10);if(isNaN(d))return 'x';
  if(d<=3)return 'A';if(d<=9)return 'B';if(d<=33)return 'C';if(d===35)return 'D';if(d<=39)return 'E';if(d<=43)return 'F';if(d<=47)return 'G';if(d<=53)return 'H';if(d<=56)return 'I';if(d<=63)return 'J';if(d<=66)return 'K';if(d===68)return 'L';if(d<=75)return 'M';if(d<=82)return 'N';if(d===84)return 'O';if(d===85)return 'P';if(d<=88)return 'Q';if(d<=93)return 'R';return 'S'}
@@ -789,7 +789,7 @@ function howEl(c){const e=c.e,w=c.by.official_website||[],wa=w.find(x=>x.availab
   h('h4',null,'Website proven by'),proof,
   h('h4',null,'Evidence by source'),rows.length?h('div',{class:'stiles'},rows.map(([k,t])=>h('div',{class:'stile'},h('span',{class:'icon-tile '+k,'aria-hidden':'true'},icon(SRCI[k])),h('div',{style:'min-width:0'},h('div',{class:'t-title'},t),h('p',null,SRCD[k])),h('b',{'aria-label':pl(n[k],'item','items')},String(n[k]))))):h('p',{class:'st'},'No evidence was recorded.'),
   h('h4',null,'Areas checked'),h('ul',{class:'check'},AREAS.map(([k,t],i)=>{const s=(sec[k]||{}).state,on=c.areas[i];
-   return h('li',{class:on?'y':'n'},on?IC.check():IC.dash(),h('span',null,t),h('span',{class:'v'},on?(k==='activity'?hireTxt(c):'Found'):k==='activity'&&av(c,'hiring_signal').length?'Careers page only':s==='ambiguous'?'Ambiguous':SL[s]||'Not found'))})),
+   return h('li',{class:on?'y':'n'},on?IC.check():IC.dash(),h('span',null,t),h('span',{class:'v'},on?(k==='activity'?hireTxt(c):'Found'):k==='activity'&&av(c,'careers_page').length?'Careers page only':s==='ambiguous'?'Ambiguous':SL[s]||'Not found'))})),
   done?h('p',{class:'muted',style:'margin-top:18px;font-size:12.5px'},'Last checked ',h('span',{class:'num'},dt(done))):null)}
 function viewProfile(id,tab){const c=BY[id];if(!c)return [h('section',{class:'wrap pad'},h('div',{class:'card empty'},'No company with organisation number '+id+' is in this run. ',h('a',{href:'#/'},'Back to all companies')))];
  store('varde-last',id);const e=c.e,sm=e.synthesis||e.summary||{},ss=sm.sentences||[],un=sm.unknowns||[];

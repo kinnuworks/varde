@@ -199,7 +199,7 @@ def template(p: Profile) -> dict:
         add(text + ".", [site] + socials[:6])
 
     jobs = p.published("job_ad")
-    hiring = p.published("hiring_signal")
+    hiring = p.published("careers_page")
     if jobs:
         add(f"It has {len(jobs)} open position{'s' if len(jobs) != 1 else ''} listed, most recently "
             f"\"{jobs[0]['value'].get('title')}\".", jobs[:5])
@@ -319,7 +319,7 @@ def unknown_list(p: Profile) -> list[str]:
     else:
         if not p.published("social_profile"):
             out.append("Social profiles: the verified website links to none.")
-        if not p.published("hiring_signal") and not p.published("job_ad"):
+        if not p.published("careers_page") and not p.published("job_ad"):
             out.append("Hiring: no open NAV job ads and no careers page on the verified website.")
         if not p.published("dated_news"):
             out.append("Dated news: none found on the verified website.")

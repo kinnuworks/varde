@@ -31,6 +31,7 @@ SINGLE = {
 MULTI = {
     "role": ("new_role", "ended_role"), "workplace": ("new_location", "closed_location"),
     "job_ad": ("new_job", "closed_job"), "hiring_signal": ("new_hiring_signal", "removed_hiring_signal"),
+    "careers_page": ("new_careers_page", "removed_careers_page"),
     "social_profile": ("new_social_profile", "removed_social_profile"), "dated_news": ("new_news", None),
     "public_record": ("new_public_record", None), "group_relation": ("new_group_relation", "ended_group_relation"),
     "industry": ("new_industry_code", "removed_industry_code"), "registry_update": ("new_registry_update", None),

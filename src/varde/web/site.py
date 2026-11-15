@@ -251,8 +251,18 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
     legal = p.legal_name or ""
     text = pv.text
     html = pv.snap.text
-    if len(text) < 120 or PARKED.search(text[:4000]) or (len(text) < 1500 and PARKED_WEAK.search(text)):
+    title_node = pv.tree.css_first("title")
+    head_text = (title_node.text() if title_node else "") + " " + " ".join(
+        (n.attributes.get("content") or "") for n in pv.tree.css('meta[property="og:site_name"], meta[property="og:title"]'))
+    if PARKED.search(text[:4000]) or PARKED.search(head_text) or (len(text) < 1500 and PARKED_WEAK.search(text + " " + head_text)):
         return None, "parked, placeholder or empty page"
+    script_shell = False
+    if len(text) < 120:
+        # A site built by scripts sends almost no text, but its title still names the company.
+        if not name_visible(head_text, legal):
+            return None, "parked, placeholder or empty page"
+        script_shell = True
+        text = text + " " + head_text
     labelled, every = orgnr_mentions(text)
     group = {g for g in p.context.get("group_orgs", set())} | {s.get("organisasjonsnummer") for s in p.context.get("subunits", [])}
     others_labelled = labelled - {org} - group
@@ -268,9 +278,6 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
     others_any = {n for n in every if n not in group and n != org and re.search(_orgnr_raw_pattern(n), html)}
     if others_any:
         return None, f"page prints another organisation number {sorted(others_any)[:2]}"
-    title_node = pv.tree.css_first("title")
-    head_text = (title_node.text() if title_node else "") + " " + " ".join(
-        (n.attributes.get("content") or "") for n in pv.tree.css('meta[property="og:site_name"], meta[property="og:title"]'))
     named = name_visible(text + " " + head_text, legal)
     reg_domain = registered_domain(rec.get("hjemmeside") or "") if rec.get("hjemmeside") else None
     cand_domain = registered_domain(pv.snap.final_url)
@@ -308,7 +315,8 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
     unique = p.context.get("name_unique") is True
     label = ascii_slug((cand_domain or "").split(".")[0])
     core_words = [ascii_slug(w) for w in core_name(legal).split() if ascii_slug(w)]
-    if unique and name_span and label in ("".join(core_words), "-".join(core_words).replace("-", "")):
+    if unique and name_span and distinctive(legal) and (label in ("".join(core_words), "-".join(core_words).replace("-", ""))
+                                                         or domain_spells_name(pv.snap.final_url, legal)):
         town = (addr.get("poststed") or "").strip()
         people = [r.get("name") for r in p.context.get("roles", []) if r.get("kind") == "person" and r.get("name")]
         anchor = None
@@ -316,6 +324,8 @@ def prove(p: Profile, pv: PageView, cand: Candidate) -> tuple[Proof | None, str 
             anchor = f"registered post town {town.title()}"
         else:
             anchor = next((f"registered role holder {n}" for n in people if n and n.casefold() in text.casefold()), None)
+        if not anchor and script_shell and legal and f" {fold(legal)} " in f" {fold(head_text)} ":
+            anchor = f"page title giving the full legal name {legal}"
         if anchor:
             return Proof("legal_name_unique",
                          f"the domain spells the legal name, no other registered company has that name, and the site shows the {anchor}",
@@ -515,6 +525,57 @@ def handle_matches(handle: str, legal: str, site_dom: str, people: list[str] | N
     return "".join(tokens) in base
 
 
+JOB_LINK = re.compile(r"(teamtailor\.com/jobs/\d+|recman\.(no|io)/.*job|webcruiter\.(no|com)/.*(job|advert)|"
+                      r"jobbnorge\.no/.*(job|stilling)/\d+|hr-manager\.net/.*(vacanc|position|apply)|"
+                      r"reachmee\.com/.*(ad|job)|easycruit\.com/vacancy/\d+|jobylon\.com/jobs/\d+|workable\.com/j/|"
+                      r"jobs\.lever\.co/[^/]+/[0-9a-f-]{20,}|greenhouse\.io/.*jobs/\d+|finn\.no/job/.*finnkode=\d+|"
+                      r"arbeidsplassen\.nav\.no/stillinger/stilling/[0-9a-f-]{20,}|ashbyhq\.com/[^/]+/[0-9a-f-]{20,}|"
+                      r"myworkdayjobs\.com/.*/job/)", re.I)
+DEADLINE = re.compile(r"(s[øo]knadsfrist|application deadline|apply by|frist:)", re.I)
+NOT_AN_OPENING = re.compile(r"(arbeidsgiver|ung i |m[øo]t (v[åa]re|oss)|academy|nyansatt|[åa]pen s[øo]knad|aapen-soeknad|"
+                            r"open application|slik er det|hvorfor (velge|jobbe)|our people|meet the team|employee stor|"
+                            r"medarbeiderhistor|v[åa]re ansatte|lærlingordning)", re.I)
+OLD_YEAR = re.compile(r"\b20(1\d|2[0-5])\b")
+JOB_NAV = re.compile(r"^(se |vis |alle |flere |les mer|søk |apply|read more|see |view |ledige stillinger$|stillinger$|"
+                     r"karriere$|jobb hos oss$|careers?$|jobs$)", re.I)
+
+
+def _job_postings(cv: "PageView", site_dom: str | None, founded: str | None) -> list:
+    """Individual openings listed on a careers page or job board: JobPosting data first, then links to single ads."""
+    out = []
+    for item in _jsonld(cv):
+        if "JobPosting" in _types(item) and item.get("title"):
+            title = str(item["title"]).strip()
+            raw = _raw_find(cv.snap.text, re.escape(json.dumps(title, ensure_ascii=False)[1:-1][:60]))
+            if raw and 4 <= len(title) <= 160:
+                url = str(item.get("url") or cv.snap.final_url)
+                out.append((title, url, _date_ok(str(item.get("datePosted") or ""), founded), cv, raw))
+    base_path = urlsplit(cv.snap.final_url).path.rstrip("/")
+    # Openings on the company's own pages count only when the page shows application deadlines;
+    # otherwise its sub-pages are usually staff stories and employer branding, not ads.
+    lists_openings = bool(DEADLINE.search(cv.text))
+    for absolute, raw, text in cv.links:
+        text = re.sub(r"\s+", " ", text or "").strip()
+        if not (8 <= len(text) <= 140) or JOB_NAV.match(text) or raw not in cv.snap.text:
+            continue
+        path = urlsplit(absolute).path.rstrip("/")
+        own_ad = (lists_openings and registered_domain(absolute) == site_dom and base_path
+                  and path.startswith(base_path + "/") and len(path) > len(base_path) + 4
+                  and CAREERS_PATH.search(base_path + "/"))
+        if NOT_AN_OPENING.search(text + " " + path) or OLD_YEAR.search(text + " " + path):
+            continue
+        if JOB_LINK.search(absolute) or own_ad:
+            span = text_span(cv.snap.text, raw, context=40) or raw
+            parts = re.split(r"(?i)s[øo]knadsfrist|application deadline", text, maxsplit=1)
+            if len(parts) == 2:
+                due = find_date(parts[1])
+                if due and due[0][:10] < p_today():
+                    continue  # the application deadline has passed
+            title = re.split(r"(?i)s[øo]knadsfrist|snarest!|application deadline", text)[0].strip(" :-–") or text
+            out.append((title, absolute.split("#")[0], None, cv, span))
+    return out
+
+
 def _jsonld(pv: PageView) -> list[dict]:
     out = []
     for node in pv.tree.css('script[type="application/ld+json"]'):
@@ -659,22 +720,46 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
             if key not in hiring_urls:
                 hiring_urls[key] = (raw, kind)
                 hiring_page[key] = page
+    postings: list[tuple[str, str, str | None, PageView, str]] = []
     for url, (raw, kind) in list(hiring_urls.items())[:3]:
         page = hiring_page[url]
         if raw not in page.snap.text:
             continue
+        cview = None
         if kind == "careers_page":
             csnap = await f.get(url, company=org)
             if isinstance(csnap, FetchError):
                 continue
-            ctext = view(csnap).text
+            cview = view(csnap)
+            ctext = cview.text
             if (not JOB_WORDS.search(ctext) or NO_JOBS.search(ctext) or TEMPLATE_TEXT.search(ctext)
                     or len(ctext) < 200):
                 continue
+        elif "teamtailor.com" not in url:
+            bsnap = await f.get(url, company=org)
+            if not isinstance(bsnap, FetchError) and "html" in (bsnap.content_type or "html"):
+                cview = view(bsnap)
+                if p.context.get("strict_site") and not names_company(p, cview.text[:5000]):
+                    cview = None  # on a weakly proven or group site, the board must name the company
+        if cview is not None and not NO_JOBS.search(cview.text[:20000]):
+            postings.extend(_job_postings(cview, site_dom, founded))
         span = text_span(page.snap.text, raw, context=30) or raw
-        p.add_claim("hiring_signal", "activity", url, [ev(page, span)],
+        # A careers page or job board is not itself a job posting; only single ads go in hiring_signal.
+        p.add_claim("careers_page", "activity", url, [ev(page, span)],
                     label="Careers page on the verified website" if kind == "careers_page" else "Job board linked from the verified website",
                     match={"method": "linked_from_verified_site", "detail": site_dom}, extra={"signal_type": kind})
+    seen_jobs: set[str] = set()
+    for title_txt, url, posted, jpv, jraw in postings[:15]:
+        if url in seen_jobs:
+            continue
+        seen_jobs.add(url)
+        e = ev(jpv, jraw)
+        match = {"method": "listed_on_careers_page_linked_from_verified_site", "detail": jpv.snap.final_url}
+        p.add_claim("job_ad", "activity", {"title": title_txt, "url": url, "published": posted, "source": "company careers page"},
+                    [e], as_of=(posted or "")[:10] or None, label="Open position listed on the company's careers page",
+                    match=match, extra={"source_url": url, "listed_on": jpv.snap.final_url})
+        p.add_claim("hiring_signal", "activity", url, [e], as_of=(posted or "")[:10] or None, label="Job posting",
+                    match=match, extra={"signal_type": "job_posting", "title": title_txt, "source_url": url})
     boards = [u for u, (_r, kind) in hiring_urls.items() if kind == "applicant_tracking_board" and "teamtailor.com" in u]
     if boards:
         board = urlsplit(boards[0])
@@ -866,7 +951,7 @@ MONTHS = {"januar": 1, "january": 1, "jan": 1, "februar": 2, "february": 2, "feb
           "august": 8, "aug": 8, "september": 9, "sep": 9, "sept": 9, "oktober": 10, "october": 10, "okt": 10, "oct": 10,
           "november": 11, "nov": 11, "desember": 12, "december": 12, "des": 12, "dec": 12}
 DATE_PATTERNS = [
-    (re.compile(r"(?<!\d)(\d{1,2})\.\s?(" + "|".join(sorted(MONTHS, key=len, reverse=True)) + r")\.?\s+(20\d{2})", re.I), "dmy_name"),
+    (re.compile(r"(?<!\d)(\d{1,2})\.?\s?(" + "|".join(sorted(MONTHS, key=len, reverse=True)) + r")\.?\s+(20\d{2})", re.I), "dmy_name"),
     (re.compile(r"(" + "|".join(sorted(MONTHS, key=len, reverse=True)) + r")\.?\s+(\d{1,2}),?\s+(20\d{2})", re.I), "mdy_name"),
     (re.compile(r"(?<!\d)(\d{1,2})\.(\d{1,2})\.(20\d{2})(?!\d)"), "dmy_dot"),
     (re.compile(r"(?<!\d)(20\d{2})-(\d{2})-(\d{2})(?!\d)"), "iso"),
@@ -1074,6 +1159,26 @@ async def name_unique(p: Profile, f: Fetcher) -> bool | None:
     return not others
 
 
+def rejection_summary(rejected: list[str]) -> str:
+    """Why candidates failed, as counts only. Never name a rejected site: a site named anywhere in the output
+    reads as a claim about this company."""
+    from collections import Counter
+    plain = {"dns_or_private_address": "domain does not exist", "network": "site could not be reached",
+             "timeout": "site did not respond in time", "blocked_robots": "site's robots.txt disallows access",
+             "budget": "skipped to stay within the run budget"}
+    counts: Counter = Counter()
+    for r in rejected:
+        why = r.split(": ", 1)[1] if ": " in r else r
+        why = re.sub(r"\[[^\]]*\]|\(\S+\)", "", plain.get(why, why))
+        why = re.sub(r"https?://\S+|\b[\w-]+\.(no|com|as|net|org|io|se|dk|eu)\b", "a site", why).strip(" ;,.")
+        counts[why] += 1
+    if not counts:
+        return "No candidate site to check."
+    total = sum(counts.values())
+    return f"Checked {total} candidate site{'s' if total != 1 else ''}: " + "; ".join(
+        f"{n} {why}" for why, n in counts.most_common()) + "."
+
+
 def domain_spells_name(url: str, legal_name: str) -> bool:
     """The domain carries a distinctive word of the legal name, the whole name, or its initials."""
     label = ascii_slug((registered_domain(url) or "").split(".")[0])
@@ -1254,7 +1359,7 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
             # A group site is not this company's website, and publishing it under this company's name
             # reads as a wrong-company claim. Say what was found, publish nothing.
             p.mark_field("official_website", "web_presence", "ambiguous",
-                         f"The site found ({dom}) belongs to the company's group; its own organisation number is not on it.")
+                         "The only site found belongs to the company's group; its own organisation number is not on it.")
             return
         p.context["strict_site"] = proof.strength < 3 or bool(rec_e.get("erIKonsern"))
         excl, why = exclusive(p, pv)
@@ -1297,4 +1402,4 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
     else:
         state = "not_available"
     p.mark_field("official_website", "web_presence", state,
-                 "No candidate could be proven to belong to this organisation number. Checked: " + "; ".join(rejected[:4]))
+                 "No candidate website could be proven to belong to this organisation number. " + rejection_summary(rejected))

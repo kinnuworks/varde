@@ -99,3 +99,19 @@ def test_declared_site_without_the_name_is_not_published():
     p, cand, snap = _declared_setup("<html><title>Crownstead</title><body>" + "Digitale løsninger for lokale virksomheter. " * 10 + "</body></html>",
                                     name="IDEN CAPITAL AS", url="https://crownstead.no/")
     assert not _publish_declared(p, cand, snap)
+
+
+def test_rejected_sites_never_appear_in_the_envelope():
+    import json
+    from varde.pipeline import envelope
+    from varde.web.site import rejection_summary
+    p = company("HELLAND GRUPPEN INVEST AS")
+    reason = "No candidate website could be proven. " + rejection_summary(
+        ["https://helland.no/: page names other organisation number(s) ['943511128']",
+         "https://hellandgruppeninvest.no/: dns_or_private_address"])
+    p.mark_field("official_website", "web_presence", "ambiguous", reason)
+    p.error("website", "fetch failed for https://crownstead.no/ after retry")
+    env = envelope(p, "2026-11-15T00:00:00Z", {})
+    blob = json.dumps(env)
+    assert "helland.no" not in blob and "hellandgruppeninvest" not in blob and "crownstead" not in blob
+    assert "2 candidate sites" in blob

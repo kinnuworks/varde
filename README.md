@@ -57,11 +57,13 @@ An envelope holds `legal_name`, seven `sections` (identity and public brand, lat
  "span_exact": true, "extraction_method": "website_identity_v1"}
 ```
 
+No envelope names a site Varde did not publish. Reasons for a missing website give counts only ("Checked 4 candidate sites: 3 domain does not exist; 1 legal name not visible on the page"), and evidence that no claim uses is dropped, so every URL in the output belongs to a published fact or to the register.
+
 Availability states: `available`, `not_available` (checked, nothing there), `blocked` (robots.txt or the source refused), `not_applicable`, `ambiguous` (found something but could not prove it belongs to this company), `failed` (source error, timeout or budget). Every `available` claim has at least one evidence record whose `claim_span` appears verbatim in the saved snapshot.
 
 Dated register events (founding, registration, articles, former names, filings, employee and address changes) are published as `dated_activity` claims in the form `title (YYYY-MM-DD)`, separate from `dated_news`, which only holds items the company published itself.
 
-Value shapes in the external families: `official_website` is the registered domain (full address in `url`), `social_profile` is `platform.com/handle` in lower case without scheme (original link in `url`), `hiring_signal` is a careers page, job board or job posting URL, and `dated_news` is `title (datetime)` with the source's own publish date (feed `pubDate`, `published` or `dc:date`, or a date printed with the item; never a modified date). Menu and listing labels are never news.
+Value shapes in the external families: `official_website` is the registered domain (full address in `url`), `social_profile` is `platform.com/handle` in lower case without scheme (original link in `url`), `hiring_signal` is the URL of one job posting (a NAV ad, an ad on the company's job board, or an opening listed on its careers page), `careers_page` is a careers page or job board linked from the verified site, and `dated_news` is `title (datetime)` with the source's own publish date (feed `pubDate`, `published` or `dc:date`, or a date printed with the item; never a modified date). Menu and listing labels are never news.
 
 ## Sources
 
