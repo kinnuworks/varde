@@ -140,6 +140,15 @@ def synthesis_block(p: Profile) -> dict:
     changed = [x for x in sentences if any(w in x["text"].lower() for w in CHANGE_WORDS)]
     unknowns = raw.get("unknowns") or []
     what_changed = [x["text"] for x in changed] or [u.split(": ", 1)[1] for u in unknowns if u.startswith("What changed: ")]
+    missing = [u.split(":", 1)[0] for u in unknowns if not u.startswith("What changed")]
+    missing = list(dict.fromkeys(m.lower().replace("(nav)", "(NAV)") for m in missing if m))[:5]
+    tail = []
+    if not changed and what_changed:
+        tail.append(what_changed[0][0].upper() + what_changed[0][1:])
+    if missing:
+        tail.append("Not found or not proven in public sources: " + ", ".join(missing) + ".")
+    if tail:
+        text = (text + " " + " ".join(tail)).strip()
     return {
         "headline": sentences[0]["text"] if sentences else (p.legal_name or ""),
         "summary": text,

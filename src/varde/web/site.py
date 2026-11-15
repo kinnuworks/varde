@@ -934,16 +934,56 @@ async def mine(p: Profile, f: Fetcher, home: PageView, ev_site: str | None) -> N
     if p.context.get("strict_site"):
         news = [n for n in news if names_company(p, (n[0] or "") + " " + (n[5] if len(n) > 5 else ""))]
     seen_titles: set[str] = set()
+    published = 0
     for title_txt, when, pv, raw, href, *_ctx in sorted(news, key=lambda x: x[1], reverse=True)[:20]:
+        if published >= 8:  # coverage counts companies more than items; a few checked items beat many
+            break
         key = fold(title_txt)
         if key in seen_titles or raw not in pv.snap.text:
             continue
+        # Open the article itself: its own publish date must agree with the listing, and on a weakly
+        # proven site the article must name the company.
+        article_ev, method = None, "verified_site"
+        if href and registered_domain(href) == site_dom and href.split("#")[0].rstrip("/") != pv.snap.final_url.rstrip("/"):
+            asnap = await f.get(href.split("#")[0], company=org)
+            if not isinstance(asnap, FetchError) and "html" in (asnap.content_type or "html"):
+                adate, araw = article_date(asnap.text, founded)
+                if adate:
+                    if abs(_days_between(adate, when)) > 2:
+                        continue  # the article gives another publish date
+                    av = view(asnap)
+                    if p.context.get("strict_site") and not names_company(p, title_txt + " " + av.text[:8000]):
+                        continue
+                    article_ev, method = ev(av, araw), "article_page_date"
         seen_titles.add(key)
-        p.add_claim("dated_news", "activity", f"{title_txt} ({when})", [ev(pv, raw)], as_of=when[:10],
+        evs = ([article_ev] if article_ev else []) + [ev(pv, raw)]
+        p.add_claim("dated_news", "activity", f"{title_txt} ({when})", evs, as_of=when[:10],
                     label="Dated news from the company's own website",
-                    match={"method": "verified_site", "detail": site_dom},
+                    match={"method": method, "detail": site_dom},
                     extra={"title": title_txt, "published": when, "published_at": when, "url": href,
                            "source_url": href or pv.snap.final_url})
+        published += 1
+
+
+def article_date(html: str, founded: str | None) -> tuple[str | None, str | None]:
+    """(ISO date, exact source text) of an article's own publish date, from meta, JSON-LD or a time element."""
+    for pat in (r'<meta[^>]+property="article:published_time"[^>]+content="([^"]+)"',
+                r'<meta[^>]+content="([^"]+)"[^>]+property="article:published_time"',
+                r'"datePublished"\s*:\s*"([^"]+)"', r'<time[^>]+datetime="([^"]+)"'):
+        m = re.search(pat, html)
+        if m:
+            when = _date_ok(m.group(1), founded)
+            if when:
+                return when, m.group(0)
+    return None, None
+
+
+def _days_between(a: str, b: str) -> int:
+    from datetime import date
+    try:
+        return (date.fromisoformat(a[:10]) - date.fromisoformat(b[:10])).days
+    except ValueError:
+        return 0
 
 
 MONTHS = {"januar": 1, "january": 1, "jan": 1, "februar": 2, "february": 2, "feb": 2, "mars": 3, "march": 3, "mar": 3,

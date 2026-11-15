@@ -109,19 +109,20 @@ def template(p: Profile) -> dict:
     desc = _first(p, "website_description")
     industry = next((c for c in p.published("industry") if c["value"].get("rank") == 1), None)
     desc_text = _sentence_cut(desc["value"]) if desc else None
-    if desc and desc_text:
-        add(f"Its website describes the business as follows: \"{desc_text}\"" + ("" if desc_text[-1] in ".!?" else "."), [desc])
-    elif activity:
-        add(f"Its registered activity: \"{_sentence_cut(activity['value']) or activity['value'][:200]}\"", [activity])
-    if industry:
+    if industry and not industry["value"]["code"].startswith("00"):
         code = industry["value"]["code"]
         english = NACE_EN.get(code) or NACE_EN.get(code[:5].rstrip("0").rstrip(".")) or NACE_EN.get(code[:4])
-        if code.startswith("00"):
-            pass
-        elif english:
-            add(f"Its main industry code is {code}: {english.lower()}.", [industry])
+        if english:
+            add(f"It works in {english.lower()} (industry code {code}).", [industry])
         else:
             add(f"Its main industry code is {code} ({industry['value']['description'].lower()}).", [industry])
+    if desc and desc_text:
+        lang = ", in Norwegian," if _norwegian(desc_text) else ""
+        add(f"Its website describes the business{lang} as: \"{desc_text}\"" + ("" if desc_text[-1] in ".!?" else "."), [desc])
+    elif activity:
+        text = _sentence_cut(activity["value"]) or activity["value"][:200]
+        lang = ", in Norwegian," if _norwegian(text) else ""
+        add(f"The register describes its activity{lang} as: \"{text}\"", [activity])
 
     emp = _first(p, "registered_employees")
     workplaces = p.published("workplace")
@@ -258,6 +259,8 @@ def template(p: Profile) -> dict:
                         break
                     seen_fields.add(ch["field"])
                     nv = ch["new_value"]
+                    if nv in (None, "", [], {}):
+                        continue
                     if isinstance(nv, float) or (isinstance(nv, int) and not isinstance(nv, bool) and abs(nv) >= 1000):
                         nv = _fmt_amount(str(nv))
                     bits.append(f"{ch['field']} set to {nv} on {u['as_of']}")
@@ -269,13 +272,23 @@ def template(p: Profile) -> dict:
             add("Recent changes in the register: " + "; ".join(bits) + ".", cites)
         else:
             latest = updates[0]
-            fields = ", ".join(latest["value"].get("changed_fields") or [])
+            fields = ", ".join(FIELD_EN.get(x, x) for x in (latest["value"].get("changed_fields") or []))
             add(f"The register's most recent update was on {latest['as_of']}" + (f" ({fields})." if fields else "."), [latest])
 
     valid = [x for x in s if validate(p, x)]
     unknowns = unknown_list(p)
     return {"text": " ".join(x["text"] for x in valid), "sentences": valid, "unknowns": unknowns, "writer": "template_v1"}
 
+
+FIELD_EN = {"sisteInnsendteAarsregnskap": "new annual accounts filed", "antallAnsatte": "employee count",
+            "forretningsadresse": "business address", "postadresse": "postal address", "hjemmeside": "website",
+            "naeringskode1": "industry code", "navn": "name", "epostadresse": "email", "telefon": "phone",
+            "mobil": "mobile phone", "vedtektsfestetFormaal": "statutory purpose", "aktivitet": "registered activity",
+            "registreringsdatoAntallAnsatteEnhetsregisteret": "employee count registration date",
+            "registreringsdatoAntallAnsatteNAVAaregisteret": "employee count date (NAV)",
+            "harRegistrertAntallAnsatte": "employee count registered", "kapital": "share capital",
+            "registrertIMvaregisteret": "VAT registration", "konkurs": "bankruptcy flag", "underAvvikling": "winding-up flag",
+            "organisasjonsform": "legal form", "vedtektsdato": "articles of association date"}
 
 UNKNOWN_LABELS = {
     "official_website": "Official website", "social_profile": "Social profiles", "job_ad": "Open positions (NAV)",
@@ -292,6 +305,15 @@ def _plain(reason: str) -> str:
                       ("blocked_policy", "address not allowed")):
         reason = reason.replace(raw, nice)
     return reason
+
+
+NO_WORDS = {"og", "av", "med", "for", "til", "som", "innen", "drift", "virksomhet", "samt", "annen", "eiendom", "salg",
+            "naturlig", "hører", "sammen", "tjenester", "utleie", "handel", "kjøp", "eie", "deltakelse", "selskaper", "vi", "er"}
+
+
+def _norwegian(text: str) -> bool:
+    words = re.findall(r"[a-zæøå]+", (text or "").lower())
+    return bool(words) and (sum(w in NO_WORDS for w in words) >= 2 or any(ch in text.lower() for ch in "æøå"))
 
 
 def _sentence_cut(text: str, limit: int = 240) -> str | None:
