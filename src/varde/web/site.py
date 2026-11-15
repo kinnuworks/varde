@@ -49,7 +49,9 @@ PRESS_LINK = re.compile(r"https?://(www\.)?(mynewsdesk\.com/no/[\w-]+|kommunikas
 PARKED = re.compile(
     r"(domain (name )?(is )?for sale|domenet (er )?til salgs|this domain (has been|was) registered|parkert domene|"
     r"domain parking|account suspended|buy this domain|kjøp dette domenet|registrert hos domeneshop|"
-    r"this site can.t be reached|default web page|index of /)", re.I)
+    r"this site can.t be reached|default web page|index of /|parked at \w+|purchased and parked|parked free|"
+    r"parkert hos|domenet er registrert|this domain is registered|domain is parked|godaddy\.com/domains|"
+    r"sedo\.com|dan\.com/buy|hugedomains|website coming soon|launching soon)", re.I)
 PARKED_WEAK = re.compile(
     r"(coming soon|kommer snart|under (construction|utvikling|oppbygging)|hello world!|web ?hotel|"
     r"webhotell.{0,40}(aktivert|klar)|it works!|siden er under arbeid)", re.I)
@@ -1232,45 +1234,65 @@ def domain_spells_name(url: str, legal_name: str) -> bool:
     return any(w in label for w in words if (len(w) >= 3 or any(ch.isdigit() for ch in w)) and w not in GENERIC_WORDS)
 
 
+def domain_is_name(url: str, legal_name: str) -> bool:
+    """The domain spells the whole name: every distinctive word, nothing else of length (initial-style names aside)."""
+    label = ascii_slug((registered_domain(url) or "").split(".")[0])
+    words = [ascii_slug(w) for w in core_name(legal_name).split() if ascii_slug(w)]
+    if len(words) > 1 and words[-1] in ("no", "com", "as", "net", "org"):
+        words = words[:-1]  # "GODKONTROLL.NO AS": the name carries its own domain ending
+    if not label or not words or len(label) < 4:
+        return False
+    full = "".join(words)
+    core = "".join(w for w in words if w not in GENERIC_WORDS) or full
+    return label in (full, core) or (label.startswith(core) and len(core) >= 5 and len(label) - len(core) <= 3)
+
+
 def _publish_declared(p: Profile, cand: Candidate, snap: Snapshot) -> bool:
-    """The company declared this website in Enhetsregisteret and it is live, but the site itself does not
-    prove the organisation number (often a group, chain or manager site). Publish it on the register's word,
-    labelled as such, and take nothing else from the site."""
+    """The company gives this domain in Enhetsregisteret (as its website or its email address) and the live site
+    does not prove the organisation number. Publish it on the register's word only when the site shows the
+    company's name or the domain spells the whole name, and take nothing else from the site."""
     from ..profile import json_span
     esnap = p.context.get("entity_snap")
-    reg = (p.context.get("entity") or {}).get("hjemmeside")
-    if esnap is None or not reg:
+    rec = p.context.get("entity") or {}
+    if esnap is None:
         return False
     pv = view(snap)
     labelled, _every = orgnr_mentions(pv.text)
     others = labelled - {p.organisation_number} - set(p.context.get("group_orgs", set()))
+    if others or PARKED.search(pv.text[:4000]):
+        return False
     title = pv.tree.css_first("title")
     shown = name_visible(pv.text + " " + (title.text() if title else ""), p.legal_name or "")
-    label = ascii_slug((registered_domain(snap.final_url) or "").split(".")[0])
-    words = [ascii_slug(w) for w in core_name(p.legal_name or "").split() if len(ascii_slug(w)) >= 3]
-    trade = GENERIC_WORDS | FIRST_WORD_STOP | {"barnehage", "barnehager", "skole", "kommune", "legat", "legata", "sameie",
-                                               "borettslag", "boligsameie", "klinikk", "senter", "stiftelse"}
-    spelled = any(w in label for w in words if w not in trade)
-    if not shown:
-        return False  # the register's word alone is not enough: the site must name this company
-    span = json_span(esnap.text, "hjemmeside", reg)
+    spelled = domain_is_name(snap.final_url, p.legal_name or "")
+    dom = registered_domain(snap.final_url)
+    if cand.source == "registry_website":
+        key, raw = "hjemmeside", rec.get("hjemmeside")
+        if not (shown or spelled):
+            return False
+    else:
+        key, raw = "epostadresse", rec.get("epostadresse")
+        if not raw or "@" not in raw or registered_domain(raw.split("@", 1)[1]) != dom or not spelled:
+            return False
+    span = json_span(esnap.text, key, raw) if raw else None
     if not span:
         return False
+    how = "website" if key == "hjemmeside" else "email address"
     e = p.add_evidence(esnap, source_class="official_registry", span=span, method="brreg_entity_v1",
                        licence="NLOD 2.0 (Brønnøysundregistrene)",
-                       note=f"The company declares this website in Enhetsregisteret; fetched live at {snap.retrieved_at} "
+                       note=f"The company gives this domain as its {how} in Enhetsregisteret; fetched live at {snap.retrieved_at} "
                             f"({snap.final_url}, HTTP {snap.status}).")
     if not e:
         return False
     p.claims = [c for c in p.claims if not (c["field"] in ("official_website", "related_website") and c["availability"] != "available")]
-    p.add_claim("official_website", "web_presence", registered_domain(snap.final_url), [e],
-                label="Official website (declared in the register)", confidence=0.85,
-                match={"method": "declared_in_register",
-                       "detail": "hjemmeside in Enhetsregisteret; the live site does not print the organisation number",
+    p.add_claim("official_website", "web_presence", dom, [e],
+                label="Official website (given in the register)", confidence=0.85,
+                match={"method": "declared_in_register" if key == "hjemmeside" else "registry_email_domain_spells_name",
+                       "detail": (f"{how} in Enhetsregisteret; " + ("the site shows the legal name" if shown else "the domain spells the legal name")
+                                  + "; the site does not print the organisation number"),
                        "candidate_source": cand.source},
                 extra={"url": snap.final_url, "exclusive": False})
     p.mark_field("social_profile", "web_presence", "ambiguous",
-                 "The website is declared in the register but does not itself prove the organisation number, "
+                 "The website is given in the register but does not itself print the organisation number, "
                  "so profiles and news linked from it are not used.")
     return True
 
@@ -1345,7 +1367,8 @@ async def website(p: Profile, f: Fetcher, seeds: dict[str, list[str]] | None, na
                     break
         if not proof or not proof.span:
             rejected.append(f"{cand.url}: {reason or 'proof has no quotable span'}")
-            if cand.source == "registry_website" and reason and "parked" not in reason and declared_live is None:
+            if cand.source in ("registry_website", "registry_email") and reason and "parked" not in reason \
+                    and "other organisation" not in reason and "another company" not in reason and declared_live is None:
                 declared_live = (cand, snap)
             continue
         if proof.strength < 3:

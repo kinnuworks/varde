@@ -115,3 +115,11 @@ def test_rejected_sites_never_appear_in_the_envelope():
     blob = json.dumps(env)
     assert "helland.no" not in blob and "hellandgruppeninvest" not in blob and "crownstead" not in blob
     assert "2 candidate sites" in blob
+
+
+def test_register_email_domain_that_spells_the_name():
+    from varde.web.site import domain_is_name
+    assert domain_is_name("https://froyadata.no/", "FRØYA DATA AS")
+    assert domain_is_name("https://godkontroll.no/", "GODKONTROLL.NO AS")
+    assert not domain_is_name("https://heimdalgruppen.no/", "BISSMIET AS")
+    assert not domain_is_name("https://crownstead.no/", "IDEN CAPITAL AS")
